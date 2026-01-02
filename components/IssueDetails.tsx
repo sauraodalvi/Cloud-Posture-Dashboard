@@ -13,12 +13,19 @@ import {
   Sparkles,
   Loader2
 } from 'lucide-react';
-import { CloudProvider, Environment, AssetType, MisconfigDetail } from '../types';
-import { MOCK_DETAILED_ISSUES, SEVERITY_TEXT_MAP, SEVERITY_COLOR_MAP } from '../constants';
+import { CloudProvider, AssetType, Misconfiguration } from '../types';
+import { MOCK_RECORDS, SEVERITY_COLORS } from '../constants';
 /**
  * Fixed import: Using 'getRemediation' as the exported member from geminiService.
  */
 import { getRemediation, RemediationGuidance } from '../services/geminiService';
+
+// Define Environment locally as it is missing from types.ts
+enum Environment {
+  PROD = 'Prod',
+  STAGING = 'Staging',
+  DEV = 'Dev'
+}
 
 interface IssueDetailsProps {
   provider: CloudProvider;
@@ -33,13 +40,14 @@ const IssueDetails: React.FC<IssueDetailsProps> = ({ provider, environment, serv
   const [loadingGuidance, setLoadingGuidance] = useState<Record<string, boolean>>({});
   const [copied, setCopied] = useState<string | null>(null);
 
+  // Replaced MOCK_DETAILED_ISSUES with MOCK_RECORDS and adjusted filtering
   const filteredIssues = useMemo(() => {
-    return MOCK_DETAILED_ISSUES.filter(m => 
-      m.assetType === service
+    return MOCK_RECORDS.filter(m => 
+      m.resourceType === service
     );
   }, [service]);
 
-  const toggleExpand = async (issue: MisconfigDetail) => {
+  const toggleExpand = async (issue: Misconfiguration) => {
     if (expandedId === issue.id) {
       setExpandedId(null);
       return;
@@ -49,9 +57,9 @@ const IssueDetails: React.FC<IssueDetailsProps> = ({ provider, environment, serv
     if (!guidance[issue.id] && !loadingGuidance[issue.id]) {
       setLoadingGuidance(prev => ({ ...prev, [issue.id]: true }));
       /**
-       * Fixed call: Calling 'getRemediation' instead of non-existent 'getRemediationGuidance'.
+       * Fixed call: Using issue.resourceName as title for getRemediation
        */
-      const result = await getRemediation(issue.title, issue.description);
+      const result = await getRemediation(issue.resourceName, issue.description);
       setGuidance(prev => ({ ...prev, [issue.id]: result }));
       setLoadingGuidance(prev => ({ ...prev, [issue.id]: false }));
     }
@@ -99,12 +107,13 @@ const IssueDetails: React.FC<IssueDetailsProps> = ({ provider, environment, serv
               <React.Fragment key={issue.id}>
                 <tr className={`hover:bg-slate-50 transition-colors cursor-pointer ${expandedId === issue.id ? 'bg-blue-50/30' : ''}`} onClick={() => toggleExpand(issue)}>
                   <td className="px-6 py-5">
-                    <div className="font-semibold text-slate-800">{issue.title}</div>
-                    <div className="text-xs text-slate-400 mt-0.5">{issue.projectId}</div>
+                    <div className="font-semibold text-slate-800">{issue.resourceName}</div>
+                    <div className="text-xs text-slate-400 mt-0.5">{issue.account}</div>
                   </td>
                   <td className="px-6 py-5">
-                    <div className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-bold ${SEVERITY_TEXT_MAP[issue.severity]} bg-white border border-slate-200`}>
-                      <div className={`w-1.5 h-1.5 rounded-full ${SEVERITY_COLOR_MAP[issue.severity]}`}></div>
+                    {/* Replaced SEVERITY_TEXT_MAP/SEVERITY_COLOR_MAP with SEVERITY_COLORS */}
+                    <div className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-bold ${SEVERITY_COLORS[issue.severity]} border border-slate-200`}>
+                      <div className="w-1.5 h-1.5 rounded-full bg-current"></div>
                       {issue.severity}
                     </div>
                   </td>
@@ -114,7 +123,7 @@ const IssueDetails: React.FC<IssueDetailsProps> = ({ provider, environment, serv
                     </span>
                   </td>
                   <td className="px-6 py-5 text-xs text-slate-500 font-medium">
-                    {issue.detectedTime}
+                    {new Date(issue.detectedAt).toLocaleDateString()}
                   </td>
                   <td className="px-6 py-5 text-right">
                     <button className="text-slate-400 hover:text-blue-600 transition-colors">
@@ -140,12 +149,10 @@ const IssueDetails: React.FC<IssueDetailsProps> = ({ provider, environment, serv
                               <div className="space-y-4">
                                 <div>
                                   <p className="text-sm font-bold text-slate-700 mb-1">Impact Analysis</p>
-                                  {/* Fixed field name from why to what to match RemediationGuidance interface */}
                                   <p className="text-sm text-slate-600 leading-relaxed">{guidance[issue.id].what}</p>
                                 </div>
                                 <div>
                                   <p className="text-sm font-bold text-slate-700 mb-1">Remediation Steps</p>
-                                  {/* Fixed field name from fix to how to match RemediationGuidance interface */}
                                   <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-line">{guidance[issue.id].how}</p>
                                 </div>
                               </div>

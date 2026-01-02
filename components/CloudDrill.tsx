@@ -2,7 +2,14 @@
 import React from 'react';
 import { ChevronLeft, Filter, PieChart as PieIcon, Info } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip } from 'recharts';
-import { CloudProvider, Environment, AssetType } from '../types';
+import { CloudProvider, AssetType } from '../types';
+
+// Define Environment locally as it is missing from types.ts
+enum Environment {
+  PROD = 'Prod',
+  STAGING = 'Staging',
+  DEV = 'Dev'
+}
 
 interface CloudDrillProps {
   provider: CloudProvider;
@@ -15,26 +22,27 @@ const CloudDrill: React.FC<CloudDrillProps> = ({ provider, onBack, onNavigateToD
     { name: 'Storage', value: 40 },
     { name: 'IAM', value: 30 },
     { name: 'Network', value: 20 },
-    { name: 'Compute', value: 10 },
+    { name: 'Database', value: 10 },
   ];
   const COLORS = ['#3b82f6', '#f59e0b', '#ef4444', '#10b981'];
 
   const environments = [Environment.PROD, Environment.STAGING, Environment.DEV];
-  const services = [AssetType.STORAGE, AssetType.IAM, AssetType.NETWORK, AssetType.COMPUTE];
+  // Replaced AssetType.COMPUTE with AssetType.DB as COMPUTE is missing from AssetType enum
+  const services = [AssetType.STORAGE, AssetType.IAM, AssetType.NETWORK, AssetType.DB];
 
   const heatmapData: Record<string, number> = {
     [`${Environment.PROD}-${AssetType.STORAGE}`]: 12,
     [`${Environment.PROD}-${AssetType.IAM}`]: 8,
     [`${Environment.PROD}-${AssetType.NETWORK}`]: 15,
-    [`${Environment.PROD}-${AssetType.COMPUTE}`]: 4,
+    [`${Environment.PROD}-${AssetType.DB}`]: 4,
     [`${Environment.STAGING}-${AssetType.STORAGE}`]: 5,
     [`${Environment.STAGING}-${AssetType.IAM}`]: 2,
     [`${Environment.STAGING}-${AssetType.NETWORK}`]: 6,
-    [`${Environment.STAGING}-${AssetType.COMPUTE}`]: 1,
+    [`${Environment.STAGING}-${AssetType.DB}`]: 1,
     [`${Environment.DEV}-${AssetType.STORAGE}`]: 3,
     [`${Environment.DEV}-${AssetType.IAM}`]: 1,
     [`${Environment.DEV}-${AssetType.NETWORK}`]: 2,
-    [`${Environment.DEV}-${AssetType.COMPUTE}`]: 0,
+    [`${Environment.DEV}-${AssetType.DB}`]: 0,
   };
 
   const getHeatmapColor = (count: number) => {

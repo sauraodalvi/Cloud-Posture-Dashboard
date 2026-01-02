@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Shield, 
   List, 
@@ -13,13 +13,48 @@ import {
   Info, 
   Layers,
   Zap,
-  MoreVertical,
-  ChevronLeft
+  ChevronLeft,
+  HelpCircle,
+  ArrowRight,
+  ChevronDown
 } from 'lucide-react';
 import { CloudProvider, Severity, Status, AssetType, Misconfiguration } from './types';
 import { MOCK_RECORDS, SEVERITY_COLORS } from './constants';
 
 type Frame = 'COVER' | 'OVERVIEW' | 'LIST';
+
+const WALKTHROUGH_STEPS = [
+  {
+    anchorId: 'cloud-filter',
+    title: 'Cloud Filter',
+    text: 'You’re viewing all connected cloud accounts by default to avoid blind spots.'
+  },
+  {
+    anchorId: 'severity-summary',
+    title: 'Severity Summary',
+    text: 'Start here to quickly spot critical and high-risk misconfigurations.'
+  },
+  {
+    anchorId: 'table-preview',
+    title: 'Table Preview',
+    text: 'This table lists urgent issues—click any row to inspect details.'
+  },
+  {
+    anchorId: 'filter-chips',
+    title: 'Filter Chips',
+    text: 'Use filters to narrow issues by severity, cloud, or resource type.'
+  },
+  {
+    anchorId: 'panel-header',
+    title: 'Issue Details',
+    text: 'Review impact, affected resources, and remediation here.'
+  },
+  {
+    anchorId: 'action-buttons',
+    title: 'Action Buttons',
+    text: 'Take lightweight actions without risky automation.'
+  }
+];
 
 export default function App() {
   const [currentFrame, setCurrentFrame] = useState<Frame>('COVER');
@@ -31,8 +66,10 @@ export default function App() {
   });
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
   const [records, setRecords] = useState<Misconfiguration[]>(MOCK_RECORDS);
+  const [walkthroughActive, setWalkthroughActive] = useState(false);
+  const [walkthroughStep, setWalkthroughStep] = useState(0);
 
-  // Filter Logic (Persistent across frames)
+  // Filter Logic
   const filteredRecords = useMemo(() => {
     return records.filter(r => {
       const sMatch = filters.severity.length === 0 || filters.severity.includes(r.severity);
@@ -71,9 +108,8 @@ export default function App() {
   };
 
   // UI Components
-  // Changed children to optional to fix "children is missing" TS errors.
   const Annotation = ({ children, className = "" }: { children?: React.ReactNode, className?: string }) => (
-    <div className={`absolute z-50 bg-yellow-100 border border-yellow-300 p-2 text-[10px] font-bold shadow-sm rotate-1 w-44 ${className}`}>
+    <div className={`absolute z-40 bg-yellow-100 border border-yellow-300 p-2 text-[10px] font-bold shadow-sm rotate-1 w-44 ${className}`}>
       <div className="flex gap-1.5 items-start">
         <Zap size={10} className="mt-0.5 text-yellow-600 shrink-0" />
         <p>{children}</p>
@@ -87,54 +123,93 @@ export default function App() {
     </span>
   );
 
+  const WalkthroughOverlay = () => {
+    if (!walkthroughActive) return null;
+    const step = WALKTHROUGH_STEPS[walkthroughStep];
+    return (
+      <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center">
+        <div className="fixed inset-0 bg-black/40" onClick={() => setWalkthroughActive(false)} />
+        <div className="bg-white border-2 border-black p-6 w-80 shadow-2xl relative z-[101]">
+          <div className="flex justify-between items-start mb-4">
+            <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400">Step {walkthroughStep + 1}/6</h4>
+            <button onClick={() => setWalkthroughActive(false)}><X size={14} /></button>
+          </div>
+          <h3 className="text-sm font-black uppercase mb-2">{step.title}</h3>
+          <p className="text-xs text-gray-700 leading-relaxed mb-6 italic">“{step.text}”</p>
+          <div className="flex justify-between">
+            <button onClick={() => setWalkthroughActive(false)} className="text-[10px] font-bold uppercase text-gray-400">Skip</button>
+            <button 
+              onClick={() => {
+                if (walkthroughStep < WALKTHROUGH_STEPS.length - 1) setWalkthroughStep(prev => prev + 1);
+                else setWalkthroughActive(false);
+              }}
+              className="px-4 py-1.5 bg-black text-white text-[10px] font-bold uppercase tracking-widest flex items-center gap-2"
+            >
+              {walkthroughStep === WALKTHROUGH_STEPS.length - 1 ? 'Done' : 'Next'} <ChevronRight size={12} />
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   // --- RENDERING ---
 
   if (currentFrame === 'COVER') {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-8">
+      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-8 grayscale">
         <div className="max-w-4xl w-full bg-white border border-gray-200 shadow-2xl p-16 relative overflow-hidden">
-          <Annotation className="-top-2 -right-2">Decision: Cover frame aligns stakeholders on persona & scope.</Annotation>
+          <Annotation className="-top-2 -right-2">Frame 1: Reviewer context & persona alignment.</Annotation>
           
           <header className="mb-12 border-b-4 border-black pb-6">
-            <h1 className="text-5xl font-black uppercase tracking-tighter text-black">Cloud Posture Dashboard</h1>
-            <p className="text-gray-400 font-bold uppercase tracking-widest text-xs mt-2">Internal MVP: AccuKnox Guardrail</p>
+            <h1 className="text-5xl font-black uppercase tracking-tighter text-black">AccuKnox Guardrail</h1>
+            <p className="text-gray-400 font-bold uppercase tracking-widest text-xs mt-2">Internal Staff Prototype — Unified Cloud Posture</p>
           </header>
 
           <div className="grid grid-cols-2 gap-16 mb-16">
             <section>
               <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-4">Problem Statement</h2>
               <p className="text-gray-800 text-sm leading-relaxed">
-                Security Ops lack a unified operational console. This dashboard provides 10-second situational awareness across AWS, Azure, and GCP without setup friction.
+                Security engineers struggle to prioritize risks across AWS, Azure, and GCP accounts. This console focuses on identifying top risks in under 3 minutes via a "table-first" operational view.
               </p>
             </section>
             <section>
-              <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-4">Persona</h2>
+              <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-4">Target Persona</h2>
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 bg-gray-100 rounded flex items-center justify-center font-bold">JL</div>
                 <div>
                   <p className="text-sm font-bold text-black">Jordan Lee</p>
-                  <p className="text-[10px] text-gray-500 uppercase font-bold">Cloud Security Engineer</p>
+                  <p className="text-[10px] text-gray-500 uppercase font-bold">Senior Cloud Security Engineer</p>
                 </div>
               </div>
             </section>
           </div>
 
-          <div className="grid grid-cols-3 gap-8 mb-16">
-            {[
-              { label: 'Risk Identification', val: '< 3m' },
-              { label: 'Cloud Visibility', val: 'Unified' },
-              { label: 'UX Priority', val: 'Table-First' }
-            ].map(m => (
-              <div key={m.label} className="border-l-2 border-gray-200 pl-4">
-                <p className="text-2xl font-black text-black">{m.val}</p>
-                <p className="text-[10px] font-bold text-gray-400 uppercase">{m.label}</p>
+          <div className="grid grid-cols-2 gap-8 mb-16">
+             <section>
+              <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-4">Success Metrics</h2>
+              <ul className="text-xs font-bold text-gray-700 space-y-2">
+                <li className="flex items-center gap-2">• <span className="text-black">Critical risk identification in {"<"} 10s</span></li>
+                <li className="flex items-center gap-2">• <span className="text-black">Zero-setup multi-cloud visibility</span></li>
+                <li className="flex items-center gap-2">• <span className="text-black">Decisive manual remediation guidance</span></li>
+              </ul>
+            </section>
+            <section>
+              <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-4">Prototype Frames</h2>
+              <div className="grid grid-cols-3 gap-2 opacity-30">
+                <div className="h-10 bg-gray-200 border border-gray-300"></div>
+                <div className="h-10 bg-gray-200 border border-gray-300"></div>
+                <div className="h-10 bg-gray-200 border border-gray-300"></div>
               </div>
-            ))}
+            </section>
           </div>
 
           <div className="flex justify-end">
             <button 
-              onClick={() => setCurrentFrame('OVERVIEW')}
+              onClick={() => {
+                setCurrentFrame('OVERVIEW');
+                setWalkthroughActive(true);
+              }}
               className="h-14 px-10 bg-black text-white text-xs font-black uppercase tracking-widest hover:bg-gray-800 transition-all flex items-center gap-3"
             >
               Start Prototype <ChevronRight size={18} />
@@ -147,71 +222,49 @@ export default function App() {
 
   return (
     <div className="flex h-screen bg-gray-50 grayscale overflow-hidden relative">
+      <WalkthroughOverlay />
+      
       {/* Sidebar */}
-      <aside className="w-16 bg-white border-r border-gray-200 flex flex-col items-center py-6 gap-8">
+      <aside className="w-16 bg-white border-r border-gray-200 flex flex-col items-center py-6 gap-8 shrink-0">
         <Shield size={28} className="text-black" />
         <nav className="flex flex-col gap-6">
           <button onClick={() => setCurrentFrame('OVERVIEW')} className={`p-2 rounded ${currentFrame === 'OVERVIEW' ? 'bg-gray-100 text-black' : 'text-gray-400 hover:text-black'}`}><Layout size={20} /></button>
           <button onClick={() => setCurrentFrame('LIST')} className={`p-2 rounded ${currentFrame === 'LIST' ? 'bg-gray-100 text-black' : 'text-gray-400 hover:text-black'}`}><List size={20} /></button>
         </nav>
+        <div className="mt-auto">
+          <button onClick={() => { setWalkthroughStep(0); setWalkthroughActive(true); }} className="p-2 text-gray-400 hover:text-black"><HelpCircle size={20} /></button>
+        </div>
       </aside>
 
       <div className="flex-1 flex flex-col min-w-0">
         <header className="h-16 bg-white border-b border-gray-200 px-8 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-6">
-            <h2 className="text-sm font-black uppercase tracking-tight">{currentFrame === 'OVERVIEW' ? 'Posture Overview' : 'Inventory List'}</h2>
+            <h2 className="text-sm font-black uppercase tracking-tight">{currentFrame === 'OVERVIEW' ? 'Frame 2: Risk Overview' : 'Frame 3: Detailed Inventory'}</h2>
             <div className="h-4 w-px bg-gray-200"></div>
-            <div className="flex items-center gap-2 text-[10px] font-bold text-gray-400">
+            <div id="cloud-filter" className="flex items-center gap-2 text-[10px] font-bold text-black border border-black px-3 py-1 bg-white rounded-sm cursor-pointer">
               <Layers size={14} />
               <span>ALL CONNECTED CLOUDS</span>
+              <ChevronDown size={12} />
             </div>
+            <Annotation className="top-16 left-64">All-cloud default ensures comprehensive visibility by default.</Annotation>
           </div>
           <div className="flex items-center gap-4">
             <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
-              <Clock size={12} /> Last Sync: 2m ago
+              <Clock size={12} /> Last Data Sync: 2m ago
             </div>
-            <div className="w-8 h-8 rounded-full bg-gray-200 border border-gray-300"></div>
+            <div className="w-8 h-8 rounded-full bg-gray-200 border border-gray-300 flex items-center justify-center font-bold text-[10px]">JL</div>
           </div>
         </header>
 
         <main className="flex-1 overflow-y-auto p-8 relative">
           <Annotation className="top-8 right-8">Operational Console: No onboarding UI. Data is pre-connected.</Annotation>
 
-          {/* Persistent Filter Bar */}
-          <div className="flex items-center gap-4 mb-8 bg-white p-4 border border-gray-200 rounded-sm">
-            <div className="flex items-center gap-2 mr-4">
-              <Filter size={14} className="text-gray-400" />
-              <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Filters</span>
-            </div>
-            <div className="flex gap-2">
-              {Object.values(Severity).map(s => (
-                <button 
-                  key={s} onClick={() => toggleFilter('severity', s)}
-                  className={`px-3 py-1 text-[10px] font-black border uppercase tracking-widest transition-all ${filters.severity.includes(s) ? 'bg-black text-white border-black' : 'bg-white text-gray-400 border-gray-200 hover:border-gray-400'}`}
-                >
-                  {s}
-                </button>
-              ))}
-            </div>
-            <div className="h-4 w-px bg-gray-200 mx-2"></div>
-            <div className="flex gap-2">
-              {Object.values(CloudProvider).map(c => (
-                <button 
-                  key={c} onClick={() => toggleFilter('cloud', c)}
-                  className={`px-3 py-1 text-[10px] font-black border uppercase tracking-widest transition-all ${filters.cloud.includes(c) ? 'bg-black text-white border-black' : 'bg-white text-gray-400 border-gray-200 hover:border-gray-400'}`}
-                >
-                  {c}
-                </button>
-              ))}
-            </div>
-          </div>
-
           {currentFrame === 'OVERVIEW' ? (
-            <div className="space-y-8">
-              <div className="grid grid-cols-4 gap-6">
+            <div className="space-y-8 max-w-7xl mx-auto">
+              <div id="severity-summary" className="grid grid-cols-4 gap-6">
                 {[
                   { label: 'Connected Assets', val: '1,248' },
-                  { label: 'Active Issues', val: records.filter(r => r.status === Status.OPEN).length },
+                  { label: 'Open Issues', val: records.filter(r => r.status === Status.OPEN).length },
                   { label: 'Critical Risks', val: records.filter(r => r.severity === Severity.CRITICAL && r.status === Status.OPEN).length, accent: 'text-red-600' },
                   { label: 'High Priority', val: records.filter(r => r.severity === Severity.HIGH && r.status === Status.OPEN).length, accent: 'text-orange-600' }
                 ].map(s => (
@@ -222,37 +275,32 @@ export default function App() {
                 ))}
               </div>
 
-              <div className="bg-white border border-gray-200 rounded-sm relative">
-                <Annotation className="-top-4 left-8">Table-First: No charts. Speed over visual flair.</Annotation>
-                <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-                  <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-400">Top 10 Critical Findings</h3>
-                  <button onClick={() => setCurrentFrame('LIST')} className="text-[10px] font-black text-black hover:underline uppercase">View Full Inventory</button>
+              <div id="table-preview" className="bg-white border border-gray-200 rounded-sm relative overflow-hidden">
+                <Annotation className="-top-4 right-8">Table-first design prioritizes speed over visual charts.</Annotation>
+                <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-gray-50">
+                  <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-400">Top 10 Urgent Issues</h3>
+                  <button onClick={() => setCurrentFrame('LIST')} className="text-[10px] font-black text-black hover:underline uppercase flex items-center gap-1">Inventory Explorer <ArrowRight size={12}/></button>
                 </div>
                 <table className="w-full text-left">
                   <thead>
-                    <tr className="bg-gray-50 border-b border-gray-200 text-[9px] font-black uppercase text-gray-400 tracking-widest">
+                    <tr className="border-b border-gray-200 text-[9px] font-black uppercase text-gray-400 tracking-widest bg-white">
                       <th className="px-6 py-4">Severity</th>
                       <th className="px-6 py-4">Cloud</th>
                       <th className="px-6 py-4">Type</th>
-                      <th className="px-6 py-4">Resource</th>
-                      <th className="px-6 py-4">Account</th>
+                      <th className="px-6 py-4">Resource Name</th>
+                      <th className="px-6 py-4">Account ID</th>
                       <th className="px-6 py-4">Status</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {filteredRecords.slice(0, 10).map(r => (
-                      <tr 
-                        key={r.id} onClick={() => setSelectedIssueId(r.id)}
-                        className="hover:bg-gray-50 cursor-pointer transition-colors"
-                      >
+                  <tbody className="divide-y divide-gray-100 bg-white">
+                    {records.filter(r => r.severity === Severity.CRITICAL || r.severity === Severity.HIGH).slice(0, 10).map(r => (
+                      <tr key={r.id} onClick={() => setSelectedIssueId(r.id)} className="hover:bg-gray-50 cursor-pointer transition-colors group">
                         <td className="px-6 py-4"><SeverityBadge sev={r.severity} /></td>
                         <td className="px-6 py-4 text-[11px] font-bold">{r.cloud}</td>
                         <td className="px-6 py-4 text-[11px] text-gray-400">{r.resourceType}</td>
-                        <td className="px-6 py-4 text-[11px] font-black text-black truncate max-w-[200px]">{r.resourceName}</td>
-                        <td className="px-6 py-4 text-[11px] text-gray-400">{r.account}</td>
-                        <td className="px-6 py-4">
-                          <span className={`text-[9px] font-black px-2 py-0.5 rounded border ${r.status === Status.RESOLVED ? 'bg-gray-50 text-gray-300 border-gray-100' : 'bg-white text-black border-black'}`}>{r.status}</span>
-                        </td>
+                        <td className="px-6 py-4 text-[11px] font-black text-black truncate max-w-[180px]">{r.resourceName}</td>
+                        <td className="px-6 py-4 text-[11px] text-gray-400 font-mono">{r.account}</td>
+                        <td className="px-6 py-4"><span className="text-[9px] font-black uppercase">{r.status}</span></td>
                       </tr>
                     ))}
                   </tbody>
@@ -260,77 +308,90 @@ export default function App() {
               </div>
             </div>
           ) : (
-            <div className="bg-white border border-gray-200 rounded-sm relative">
-              <Annotation className="-top-4 left-1/2 -translate-x-1/2">Bulk Action: Jordan selects multiple for batch snooze.</Annotation>
-              <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
-                <div className="flex items-center gap-4">
-                  <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-400">Inventory ({filteredRecords.length})</h3>
-                  <div className="h-4 w-px bg-gray-200"></div>
-                  <button 
-                    disabled={selectedRows.size === 0}
-                    onClick={handleSnoozeBulk}
-                    className={`px-4 py-1.5 text-[10px] font-black uppercase border tracking-widest transition-all ${selectedRows.size > 0 ? 'bg-black text-white border-black' : 'bg-gray-50 text-gray-300 border-gray-100 cursor-not-allowed'}`}
-                  >
-                    Snooze Selected ({selectedRows.size})
-                  </button>
+            <div className="space-y-6 max-w-7xl mx-auto">
+              <div id="filter-chips" className="flex flex-wrap items-center gap-3">
+                <div className="flex items-center gap-2 mr-2">
+                  <Filter size={14} className="text-gray-400" />
+                  <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Filter View</span>
                 </div>
-                <div className="flex items-center gap-4 text-[10px] font-black text-gray-400">
-                  <span>1 - {filteredRecords.length} of {records.length}</span>
-                  <div className="flex gap-1">
-                    <button className="p-1 border border-gray-200 rounded hover:bg-gray-100"><ChevronLeft size={14} /></button>
-                    <button className="p-1 border border-gray-200 rounded hover:bg-gray-100"><ChevronRight size={14} /></button>
+                {Object.values(Severity).map(s => (
+                  <button key={s} onClick={() => toggleFilter('severity', s)} className={`px-3 py-1 text-[10px] font-black border tracking-widest uppercase transition-all ${filters.severity.includes(s) ? 'bg-black text-white border-black' : 'bg-white text-gray-400 border-gray-200 hover:border-gray-400'}`}>{s}</button>
+                ))}
+                <div className="h-4 w-px bg-gray-200 mx-2"></div>
+                {Object.values(CloudProvider).map(c => (
+                  <button key={c} onClick={() => toggleFilter('cloud', c)} className={`px-3 py-1 text-[10px] font-black border tracking-widest uppercase transition-all ${filters.cloud.includes(c) ? 'bg-black text-white border-black' : 'bg-white text-gray-400 border-gray-200 hover:border-gray-400'}`}>{c}</button>
+                ))}
+              </div>
+
+              <div className="bg-white border border-gray-200 rounded-sm overflow-hidden relative">
+                <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
+                  <div className="flex items-center gap-4">
+                    <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-400">Full Inventory ({filteredRecords.length})</h3>
+                    <div className="h-4 w-px bg-gray-200"></div>
+                    <button 
+                      disabled={selectedRows.size === 0}
+                      onClick={handleSnoozeBulk}
+                      className={`px-4 py-1.5 text-[10px] font-black uppercase border tracking-widest transition-all ${selectedRows.size > 0 ? 'bg-black text-white border-black shadow-lg' : 'bg-gray-50 text-gray-300 border-gray-100 cursor-not-allowed'}`}
+                    >
+                      Bulk Snooze ({selectedRows.size})
+                    </button>
+                    <Annotation className="-bottom-16 left-0">Multi-select allows engineers to batch process low-risk issues quickly.</Annotation>
+                  </div>
+                  <div className="flex items-center gap-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                    <span>1 - {filteredRecords.length} of 20</span>
+                    <div className="flex gap-1">
+                      <button className="p-1 border border-gray-200 rounded hover:bg-gray-100"><ChevronLeft size={14} /></button>
+                      <button className="p-1 border border-gray-200 rounded hover:bg-gray-100"><ChevronRight size={14} /></button>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <table className="w-full text-left">
-                <thead>
-                  <tr className="bg-gray-50 border-b border-gray-200 text-[9px] font-black uppercase text-gray-400 tracking-widest">
-                    <th className="px-6 py-4 w-12"><input type="checkbox" onChange={(e) => {
-                      if (e.target.checked) setSelectedRows(new Set(filteredRecords.map(x => x.id))); else setSelectedRows(new Set());
-                    }} /></th>
-                    <th className="px-6 py-4">Severity</th>
-                    <th className="px-6 py-4">Cloud</th>
-                    <th className="px-6 py-4">Type</th>
-                    <th className="px-6 py-4">Resource</th>
-                    <th className="px-6 py-4">Account</th>
-                    <th className="px-6 py-4">Status</th>
-                    <th className="px-6 py-4">Detected</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {filteredRecords.map(r => (
-                    <tr 
-                      key={r.id} onClick={() => setSelectedIssueId(r.id)}
-                      className={`hover:bg-gray-50 cursor-pointer transition-colors ${selectedRows.has(r.id) ? 'bg-gray-50' : ''}`}
-                    >
-                      <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
-                        <input type="checkbox" checked={selectedRows.has(r.id)} onChange={() => toggleRow(r.id)} />
-                      </td>
-                      <td className="px-6 py-4"><SeverityBadge sev={r.severity} /></td>
-                      <td className="px-6 py-4 text-[11px] font-bold">{r.cloud}</td>
-                      <td className="px-6 py-4 text-[11px] text-gray-400">{r.resourceType}</td>
-                      <td className="px-6 py-4 text-[11px] font-black text-black">{r.resourceName}</td>
-                      <td className="px-6 py-4 text-[11px] text-gray-400">{r.account}</td>
-                      <td className="px-6 py-4">
-                        <span className={`text-[9px] font-black px-2 py-0.5 rounded border ${r.status === Status.RESOLVED ? 'bg-gray-50 text-gray-300 border-gray-100' : 'bg-white text-black border-black'}`}>{r.status}</span>
-                      </td>
-                      <td className="px-6 py-4 text-[10px] text-gray-400 font-mono">{new Date(r.detectedAt).toLocaleDateString()}</td>
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="bg-white border-b border-gray-200 text-[9px] font-black uppercase text-gray-400 tracking-widest">
+                      <th className="px-6 py-4 w-12"><input type="checkbox" onChange={(e) => {
+                        if (e.target.checked) setSelectedRows(new Set(filteredRecords.map(x => x.id))); else setSelectedRows(new Set());
+                      }} /></th>
+                      <th className="px-6 py-4">Severity</th>
+                      <th className="px-6 py-4">Cloud</th>
+                      <th className="px-6 py-4">Resource</th>
+                      <th className="px-6 py-4">Account ID</th>
+                      <th className="px-6 py-4">Detected At</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100 bg-white">
+                    {filteredRecords.map(r => (
+                      <tr 
+                        key={r.id} onClick={() => setSelectedIssueId(r.id)}
+                        className={`hover:bg-gray-50 cursor-pointer transition-colors ${selectedRows.has(r.id) ? 'bg-gray-100' : ''}`}
+                      >
+                        <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
+                          <input type="checkbox" checked={selectedRows.has(r.id)} onChange={() => toggleRow(r.id)} />
+                        </td>
+                        <td className="px-6 py-4"><SeverityBadge sev={r.severity} /></td>
+                        <td className="px-6 py-4 text-[11px] font-bold">{r.cloud}</td>
+                        <td className="px-6 py-4">
+                          <div className="text-[11px] font-black text-black leading-tight">{r.resourceName}</div>
+                          <div className="text-[9px] text-gray-400 uppercase font-bold">{r.resourceType}</div>
+                        </td>
+                        <td className="px-6 py-4 text-[11px] text-gray-400 font-mono">{r.account}</td>
+                        <td className="px-6 py-4 text-[10px] text-gray-400 font-mono">{new Date(r.detectedAt).toLocaleDateString()}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </main>
       </div>
 
-      {/* Side Panel Overlay */}
+      {/* Frame 4: Side Panel */}
       <div 
         className={`fixed inset-y-0 right-0 w-[400px] bg-white border-l border-gray-200 shadow-2xl transition-transform duration-300 z-50 flex flex-col ${selectedIssueId ? 'translate-x-0' : 'translate-x-full'}`}
       >
         {selectedIssue && (
           <>
-            <header className="h-16 px-8 border-b border-gray-200 flex items-center justify-between shrink-0">
+            <header id="panel-header" className="h-16 px-8 border-b border-gray-200 flex items-center justify-between shrink-0 bg-white">
               <div className="flex items-center gap-3">
                 <SeverityBadge sev={selectedIssue.severity} />
                 <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{selectedIssue.id}</span>
@@ -339,17 +400,17 @@ export default function App() {
             </header>
 
             <div className="flex-1 overflow-y-auto p-8 space-y-10 relative">
-              <Annotation className="top-4 -left-12">Decision: Right-side panel keeps inventory context visible.</Annotation>
+              <Annotation className="top-4 -left-12">Right-side panel keeps inventory context visible during triage.</Annotation>
               
               <section>
-                <h2 className="text-2xl font-black text-black uppercase tracking-tighter leading-none mb-4">{selectedIssue.resourceName}</h2>
+                <h2 className="text-2xl font-black text-black uppercase tracking-tighter leading-tight mb-4">{selectedIssue.resourceName}</h2>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-gray-50 p-3 border border-gray-100 rounded-sm">
-                    <p className="text-[8px] font-black uppercase text-gray-400 mb-1 tracking-widest">Provider</p>
+                    <p className="text-[8px] font-black uppercase text-gray-400 mb-1 tracking-widest">Cloud Provider</p>
                     <p className="text-xs font-black text-black">{selectedIssue.cloud}</p>
                   </div>
                   <div className="bg-gray-50 p-3 border border-gray-100 rounded-sm">
-                    <p className="text-[8px] font-black uppercase text-gray-400 mb-1 tracking-widest">Asset Type</p>
+                    <p className="text-[8px] font-black uppercase text-gray-400 mb-1 tracking-widest">Resource Type</p>
                     <p className="text-xs font-black text-black">{selectedIssue.resourceType}</p>
                   </div>
                 </div>
@@ -364,22 +425,23 @@ export default function App() {
 
               <section>
                 <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-4 flex items-center gap-2"><CheckCircle size={14} /> Recommended Remediation</h3>
-                <p className="text-sm font-bold text-gray-900 leading-relaxed bg-gray-50 p-4 border border-gray-100 rounded-sm">
+                <div className="text-sm font-bold text-gray-900 leading-relaxed bg-gray-50 p-4 border border-gray-100 rounded-sm whitespace-pre-line">
                   {selectedIssue.remediation}
-                </p>
+                </div>
+                <Annotation className="mt-4">Manual remediation text removes dependency on complex automation scripts for MVP.</Annotation>
               </section>
             </div>
 
-            <footer className="p-8 border-t border-gray-100 bg-gray-50 grid grid-cols-2 gap-4 shrink-0">
+            <footer id="action-buttons" className="p-8 border-t border-gray-100 bg-gray-50 grid grid-cols-2 gap-4 shrink-0">
               <button 
                 onClick={() => handleResolve(selectedIssue.id)}
                 className="py-4 bg-black text-white text-[10px] font-black uppercase tracking-widest hover:bg-gray-800 transition-all flex items-center justify-center gap-2 shadow-lg"
               >
-                Resolve Issue
+                Mark Resolved
               </button>
               <div className="grid grid-cols-2 gap-2">
                 <button className="py-4 bg-white border border-gray-200 text-gray-500 text-[10px] font-black uppercase tracking-widest hover:bg-gray-50">Snooze</button>
-                <button className="py-4 bg-white border border-gray-200 text-gray-500 text-[10px] font-black uppercase tracking-widest hover:bg-gray-50">Export</button>
+                <button className="py-4 bg-white border border-gray-200 text-gray-500 text-[10px] font-black uppercase tracking-widest hover:bg-gray-50 flex items-center justify-center gap-1">Export CSV</button>
               </div>
             </footer>
           </>
@@ -390,7 +452,7 @@ export default function App() {
       {selectedIssueId && (
         <div 
           onClick={() => setSelectedIssueId(null)}
-          className="fixed inset-0 bg-black/10 backdrop-blur-[1px] z-40 animate-in fade-in"
+          className="fixed inset-0 bg-black/10 backdrop-blur-[1px] z-40"
         ></div>
       )}
     </div>

@@ -18,20 +18,11 @@ export enum Status {
   RESOLVED = 'Resolved'
 }
 
-// Added COMPUTE to AssetType to fix reference errors in components.
 export enum AssetType {
   IAM = 'IAM',
   STORAGE = 'Storage',
   DB = 'DB',
-  NETWORK = 'Network',
-  COMPUTE = 'Compute'
-}
-
-// Added Environment enum to fix missing export error in components.
-export enum Environment {
-  PROD = 'Prod',
-  STAGING = 'Staging',
-  DEV = 'Dev'
+  NETWORK = 'Network'
 }
 
 export interface Misconfiguration {
@@ -45,16 +36,4 @@ export interface Misconfiguration {
   description: string;
   remediation: string;
   detectedAt: string;
-}
-
-// Added MisconfigDetail interface to fix missing export error in IssueDetails.tsx.
-export interface MisconfigDetail {
-  id: string;
-  title: string;
-  projectId: string;
-  severity: Severity;
-  status: string;
-  detectedTime: string;
-  assetType: AssetType;
-  description: string;
 }
