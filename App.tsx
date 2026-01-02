@@ -7,16 +7,18 @@ import {
   ChevronRight, 
   X, 
   Filter, 
-  Download, 
   Clock, 
   CheckCircle, 
   Info, 
-  Layers,
+  Layers, 
   Zap,
   ChevronLeft,
   HelpCircle,
   ArrowRight,
-  ChevronDown
+  ChevronDown,
+  StickyNote,
+  Download,
+  RotateCcw
 } from 'lucide-react';
 import { CloudProvider, Severity, Status, AssetType, Misconfiguration } from './types';
 import { MOCK_RECORDS, SEVERITY_COLORS } from './constants';
@@ -59,11 +61,16 @@ const WALKTHROUGH_STEPS = [
 export default function App() {
   const [currentFrame, setCurrentFrame] = useState<Frame>('COVER');
   const [selectedIssueId, setSelectedIssueId] = useState<string | null>(null);
+  const [showAnnotations, setShowAnnotations] = useState(true);
+  const [showCloudDropdown, setShowCloudDropdown] = useState(false);
+  const [globalCloudFilter, setGlobalCloudFilter] = useState<CloudProvider | 'ALL'>('ALL');
+  
   const [filters, setFilters] = useState({
     severity: [] as Severity[],
     cloud: [] as CloudProvider[],
     resourceType: [] as AssetType[]
   });
+  
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
   const [records, setRecords] = useState<Misconfiguration[]>(MOCK_RECORDS);
   const [walkthroughActive, setWalkthroughActive] = useState(false);
@@ -72,24 +79,33 @@ export default function App() {
   // Filter Logic
   const filteredRecords = useMemo(() => {
     return records.filter(r => {
+      // Global Cloud Filter (from dropdown)
+      const gCloudMatch = globalCloudFilter === 'ALL' || r.cloud === globalCloudFilter;
+      // List View Chips
       const sMatch = filters.severity.length === 0 || filters.severity.includes(r.severity);
       const cMatch = filters.cloud.length === 0 || filters.cloud.includes(r.cloud);
       const tMatch = filters.resourceType.length === 0 || filters.resourceType.includes(r.resourceType);
-      return sMatch && cMatch && tMatch;
+      
+      return gCloudMatch && sMatch && cMatch && tMatch;
     });
-  }, [records, filters]);
+  }, [records, filters, globalCloudFilter]);
 
   const selectedIssue = useMemo(() => records.find(r => r.id === selectedIssueId), [records, selectedIssueId]);
 
   // Actions
-  const handleResolve = (id: string) => {
-    setRecords(prev => prev.map(r => r.id === id ? { ...r, status: Status.RESOLVED } : r));
-    setSelectedIssueId(null);
+  const handleUpdateStatus = (id: string, newStatus: Status) => {
+    setRecords(prev => prev.map(r => r.id === id ? { ...r, status: newStatus } : r));
+    if (newStatus !== Status.OPEN) setSelectedIssueId(null);
   };
 
   const handleSnoozeBulk = () => {
     setRecords(prev => prev.map(r => selectedRows.has(r.id) ? { ...r, status: Status.SNOOZED } : r));
     setSelectedRows(new Set());
+  };
+
+  const handleExport = (id?: string) => {
+    const target = id ? `Issue ${id}` : "Current View";
+    alert(`Exporting ${target} to CSV...`);
   };
 
   const toggleFilter = (cat: keyof typeof filters, val: any) => {
@@ -108,14 +124,17 @@ export default function App() {
   };
 
   // UI Components
-  const Annotation = ({ children, className = "" }: { children?: React.ReactNode, className?: string }) => (
-    <div className={`absolute z-40 bg-yellow-100 border border-yellow-300 p-2 text-[10px] font-bold shadow-sm rotate-1 w-44 ${className}`}>
-      <div className="flex gap-1.5 items-start">
-        <Zap size={10} className="mt-0.5 text-yellow-600 shrink-0" />
-        <p>{children}</p>
+  const Annotation = ({ children, className = "" }: { children?: React.ReactNode, className?: string }) => {
+    if (!showAnnotations) return null;
+    return (
+      <div className={`absolute z-[60] bg-yellow-100 border border-yellow-300 p-2 text-[10px] font-bold shadow-md rotate-1 w-44 pointer-events-none select-none ${className}`}>
+        <div className="flex gap-1.5 items-start">
+          <Zap size={10} className="mt-0.5 text-yellow-600 shrink-0" />
+          <p className="leading-tight">{children}</p>
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const SeverityBadge = ({ sev }: { sev: Severity }) => (
     <span className={`px-2 py-0.5 text-[9px] font-black uppercase rounded border ${SEVERITY_COLORS[sev]} border-current`}>
@@ -159,7 +178,8 @@ export default function App() {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-8 grayscale">
         <div className="max-w-4xl w-full bg-white border border-gray-200 shadow-2xl p-16 relative overflow-hidden">
-          <Annotation className="-top-2 -right-2">Frame 1: Reviewer context & persona alignment.</Annotation>
+          {/* Repositioned annotation to not overlap the main title */}
+          <Annotation className="top-12 right-12">Frame 1: Reviewer context & persona alignment.</Annotation>
           
           <header className="mb-12 border-b-4 border-black pb-6">
             <h1 className="text-5xl font-black uppercase tracking-tighter text-black">AccuKnox Guardrail</h1>
@@ -176,7 +196,7 @@ export default function App() {
             <section>
               <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-4">Target Persona</h2>
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-gray-100 rounded flex items-center justify-center font-bold">JL</div>
+                <div className="w-12 h-12 bg-gray-100 rounded flex items-center justify-center font-bold text-xs">JL</div>
                 <div>
                   <p className="text-sm font-bold text-black">Jordan Lee</p>
                   <p className="text-[10px] text-gray-500 uppercase font-bold">Senior Cloud Security Engineer</p>
@@ -204,7 +224,13 @@ export default function App() {
             </section>
           </div>
 
-          <div className="flex justify-end">
+          <div className="flex justify-between items-center">
+            <button 
+              onClick={() => setShowAnnotations(!showAnnotations)}
+              className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2 text-gray-400 hover:text-black transition-colors"
+            >
+              <StickyNote size={14} /> {showAnnotations ? 'Hide' : 'Show'} Annotations
+            </button>
             <button 
               onClick={() => {
                 setCurrentFrame('OVERVIEW');
@@ -225,48 +251,82 @@ export default function App() {
       <WalkthroughOverlay />
       
       {/* Sidebar */}
-      <aside className="w-16 bg-white border-r border-gray-200 flex flex-col items-center py-6 gap-8 shrink-0">
+      <aside className="w-16 bg-white border-r border-gray-200 flex flex-col items-center py-6 gap-8 shrink-0 z-50">
         <Shield size={28} className="text-black" />
         <nav className="flex flex-col gap-6">
-          <button onClick={() => setCurrentFrame('OVERVIEW')} className={`p-2 rounded ${currentFrame === 'OVERVIEW' ? 'bg-gray-100 text-black' : 'text-gray-400 hover:text-black'}`}><Layout size={20} /></button>
-          <button onClick={() => setCurrentFrame('LIST')} className={`p-2 rounded ${currentFrame === 'LIST' ? 'bg-gray-100 text-black' : 'text-gray-400 hover:text-black'}`}><List size={20} /></button>
+          <button onClick={() => setCurrentFrame('OVERVIEW')} className={`p-2 rounded ${currentFrame === 'OVERVIEW' ? 'bg-gray-100 text-black' : 'text-gray-400 hover:text-black'}`} title="Overview"><Layout size={20} /></button>
+          <button onClick={() => setCurrentFrame('LIST')} className={`p-2 rounded ${currentFrame === 'LIST' ? 'bg-gray-100 text-black' : 'text-gray-400 hover:text-black'}`} title="Inventory"><List size={20} /></button>
         </nav>
-        <div className="mt-auto">
-          <button onClick={() => { setWalkthroughStep(0); setWalkthroughActive(true); }} className="p-2 text-gray-400 hover:text-black"><HelpCircle size={20} /></button>
+        <div className="mt-auto flex flex-col gap-4">
+          <button onClick={() => setShowAnnotations(!showAnnotations)} className={`p-2 rounded transition-colors ${showAnnotations ? 'text-yellow-600 bg-yellow-50 border border-yellow-200' : 'text-gray-400 hover:text-black'}`} title="Toggle Notes"><StickyNote size={20} /></button>
+          <button onClick={() => { setWalkthroughStep(0); setWalkthroughActive(true); }} className="p-2 text-gray-400 hover:text-black" title="Help"><HelpCircle size={20} /></button>
         </div>
       </aside>
 
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="h-16 bg-white border-b border-gray-200 px-8 flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-6">
-            <h2 className="text-sm font-black uppercase tracking-tight">{currentFrame === 'OVERVIEW' ? 'Frame 2: Risk Overview' : 'Frame 3: Detailed Inventory'}</h2>
+        <header className="h-16 bg-white border-b border-gray-200 px-8 flex items-center justify-between shrink-0 z-40">
+          <div className="flex items-center gap-6 relative">
+            <h2 className="text-sm font-black uppercase tracking-tight">{currentFrame === 'OVERVIEW' ? 'Posture Overview' : 'Detailed Inventory'}</h2>
             <div className="h-4 w-px bg-gray-200"></div>
-            <div id="cloud-filter" className="flex items-center gap-2 text-[10px] font-bold text-black border border-black px-3 py-1 bg-white rounded-sm cursor-pointer">
-              <Layers size={14} />
-              <span>ALL CONNECTED CLOUDS</span>
-              <ChevronDown size={12} />
+            
+            {/* Functional Cloud Filter Dropdown */}
+            <div className="relative">
+              <div 
+                id="cloud-filter" 
+                onClick={() => setShowCloudDropdown(!showCloudDropdown)}
+                className="flex items-center gap-2 text-[10px] font-bold text-black border border-black px-3 py-1 bg-white rounded-sm cursor-pointer hover:bg-gray-50 transition-colors"
+              >
+                <Layers size={14} />
+                <span className="uppercase">{globalCloudFilter === 'ALL' ? 'ALL CONNECTED CLOUDS' : globalCloudFilter}</span>
+                <ChevronDown size={12} className={`transition-transform ${showCloudDropdown ? 'rotate-180' : ''}`} />
+              </div>
+              
+              {showCloudDropdown && (
+                <div className="absolute top-full left-0 mt-1 w-48 bg-white border border-black shadow-xl z-[70] py-1">
+                  {['ALL', ...Object.values(CloudProvider)].map((cloud) => (
+                    <button
+                      key={cloud}
+                      onClick={() => {
+                        setGlobalCloudFilter(cloud as any);
+                        setShowCloudDropdown(false);
+                      }}
+                      className={`w-full text-left px-4 py-2 text-[10px] font-bold uppercase hover:bg-gray-100 transition-colors ${globalCloudFilter === cloud ? 'bg-gray-50' : ''}`}
+                    >
+                      {cloud === 'ALL' ? 'All Connected Clouds' : cloud}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
-            <Annotation className="top-16 left-64">All-cloud default ensures comprehensive visibility by default.</Annotation>
+            
+            <Annotation className="top-12 left-0">All-cloud default ensures comprehensive visibility, but filterable per account.</Annotation>
           </div>
           <div className="flex items-center gap-4">
+            <button 
+              onClick={() => setShowAnnotations(!showAnnotations)}
+              className="p-1.5 rounded-full hover:bg-gray-100 transition-colors text-gray-400"
+              title="Toggle Sticky Notes"
+            >
+              <StickyNote size={16} />
+            </button>
             <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
-              <Clock size={12} /> Last Data Sync: 2m ago
+              <Clock size={12} /> Sync: 2m ago
             </div>
             <div className="w-8 h-8 rounded-full bg-gray-200 border border-gray-300 flex items-center justify-center font-bold text-[10px]">JL</div>
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto p-8 relative">
-          <Annotation className="top-8 right-8">Operational Console: No onboarding UI. Data is pre-connected.</Annotation>
+        <main className="flex-1 overflow-y-auto p-8 relative no-scrollbar">
+          <Annotation className="top-4 right-8">Operational Console: No onboarding UI. Data is pre-connected.</Annotation>
 
           {currentFrame === 'OVERVIEW' ? (
             <div className="space-y-8 max-w-7xl mx-auto">
               <div id="severity-summary" className="grid grid-cols-4 gap-6">
                 {[
-                  { label: 'Connected Assets', val: '1,248' },
-                  { label: 'Open Issues', val: records.filter(r => r.status === Status.OPEN).length },
-                  { label: 'Critical Risks', val: records.filter(r => r.severity === Severity.CRITICAL && r.status === Status.OPEN).length, accent: 'text-red-600' },
-                  { label: 'High Priority', val: records.filter(r => r.severity === Severity.HIGH && r.status === Status.OPEN).length, accent: 'text-orange-600' }
+                  { label: 'Cloud Assets', val: globalCloudFilter === 'ALL' ? '1,248' : globalCloudFilter === 'AWS' ? '512' : '368' },
+                  { label: 'Open Issues', val: filteredRecords.filter(r => r.status === Status.OPEN).length },
+                  { label: 'Critical Risks', val: filteredRecords.filter(r => r.severity === Severity.CRITICAL && r.status === Status.OPEN).length, accent: 'text-red-600' },
+                  { label: 'High Priority', val: filteredRecords.filter(r => r.severity === Severity.HIGH && r.status === Status.OPEN).length, accent: 'text-orange-600' }
                 ].map(s => (
                   <div key={s.label} className="bg-white p-6 border border-gray-200 rounded-sm">
                     <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">{s.label}</p>
@@ -275,10 +335,10 @@ export default function App() {
                 ))}
               </div>
 
-              <div id="table-preview" className="bg-white border border-gray-200 rounded-sm relative overflow-hidden">
-                <Annotation className="-top-4 right-8">Table-first design prioritizes speed over visual charts.</Annotation>
+              <div id="table-preview" className="bg-white border border-gray-200 rounded-sm relative overflow-visible">
+                <Annotation className="-top-6 right-0">Table-first design prioritizes speed over visual charts.</Annotation>
                 <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-gray-50">
-                  <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-400">Top 10 Urgent Issues</h3>
+                  <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-400">Urgent Findings ({globalCloudFilter === 'ALL' ? 'All' : globalCloudFilter})</h3>
                   <button onClick={() => setCurrentFrame('LIST')} className="text-[10px] font-black text-black hover:underline uppercase flex items-center gap-1">Inventory Explorer <ArrowRight size={12}/></button>
                 </div>
                 <table className="w-full text-left">
@@ -289,18 +349,22 @@ export default function App() {
                       <th className="px-6 py-4">Type</th>
                       <th className="px-6 py-4">Resource Name</th>
                       <th className="px-6 py-4">Account ID</th>
-                      <th className="px-6 py-4">Status</th>
+                      <th className="px-6 py-4 text-right">Status</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100 bg-white">
-                    {records.filter(r => r.severity === Severity.CRITICAL || r.severity === Severity.HIGH).slice(0, 10).map(r => (
+                    {filteredRecords.filter(r => r.severity === Severity.CRITICAL || r.severity === Severity.HIGH).slice(0, 10).map(r => (
                       <tr key={r.id} onClick={() => setSelectedIssueId(r.id)} className="hover:bg-gray-50 cursor-pointer transition-colors group">
                         <td className="px-6 py-4"><SeverityBadge sev={r.severity} /></td>
                         <td className="px-6 py-4 text-[11px] font-bold">{r.cloud}</td>
                         <td className="px-6 py-4 text-[11px] text-gray-400">{r.resourceType}</td>
                         <td className="px-6 py-4 text-[11px] font-black text-black truncate max-w-[180px]">{r.resourceName}</td>
                         <td className="px-6 py-4 text-[11px] text-gray-400 font-mono">{r.account}</td>
-                        <td className="px-6 py-4"><span className="text-[9px] font-black uppercase">{r.status}</span></td>
+                        <td className="px-6 py-4 text-right">
+                          <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded border ${r.status === Status.OPEN ? 'text-red-500 border-red-200' : 'text-gray-400 border-gray-200'}`}>
+                            {r.status}
+                          </span>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -312,20 +376,20 @@ export default function App() {
               <div id="filter-chips" className="flex flex-wrap items-center gap-3">
                 <div className="flex items-center gap-2 mr-2">
                   <Filter size={14} className="text-gray-400" />
-                  <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Filter View</span>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Inventory Filters</span>
                 </div>
                 {Object.values(Severity).map(s => (
                   <button key={s} onClick={() => toggleFilter('severity', s)} className={`px-3 py-1 text-[10px] font-black border tracking-widest uppercase transition-all ${filters.severity.includes(s) ? 'bg-black text-white border-black' : 'bg-white text-gray-400 border-gray-200 hover:border-gray-400'}`}>{s}</button>
                 ))}
                 <div className="h-4 w-px bg-gray-200 mx-2"></div>
-                {Object.values(CloudProvider).map(c => (
-                  <button key={c} onClick={() => toggleFilter('cloud', c)} className={`px-3 py-1 text-[10px] font-black border tracking-widest uppercase transition-all ${filters.cloud.includes(c) ? 'bg-black text-white border-black' : 'bg-white text-gray-400 border-gray-200 hover:border-gray-400'}`}>{c}</button>
+                {Object.values(AssetType).map(t => (
+                  <button key={t} onClick={() => toggleFilter('resourceType', t)} className={`px-3 py-1 text-[10px] font-black border tracking-widest uppercase transition-all ${filters.resourceType.includes(t) ? 'bg-black text-white border-black' : 'bg-white text-gray-400 border-gray-200 hover:border-gray-400'}`}>{t}</button>
                 ))}
               </div>
 
-              <div className="bg-white border border-gray-200 rounded-sm overflow-hidden relative">
+              <div className="bg-white border border-gray-200 rounded-sm overflow-visible relative shadow-sm">
                 <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-4 relative">
                     <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-400">Full Inventory ({filteredRecords.length})</h3>
                     <div className="h-4 w-px bg-gray-200"></div>
                     <button 
@@ -335,14 +399,13 @@ export default function App() {
                     >
                       Bulk Snooze ({selectedRows.size})
                     </button>
-                    <Annotation className="-bottom-16 left-0">Multi-select allows engineers to batch process low-risk issues quickly.</Annotation>
+                    <Annotation className="-bottom-20 -left-4">Multi-select allows engineers to batch process low-risk issues quickly.</Annotation>
                   </div>
                   <div className="flex items-center gap-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                    <span>1 - {filteredRecords.length} of 20</span>
-                    <div className="flex gap-1">
-                      <button className="p-1 border border-gray-200 rounded hover:bg-gray-100"><ChevronLeft size={14} /></button>
-                      <button className="p-1 border border-gray-200 rounded hover:bg-gray-100"><ChevronRight size={14} /></button>
-                    </div>
+                    <span>{filteredRecords.length} Results</span>
+                    <button onClick={() => handleExport()} className="hover:text-black transition-colors flex items-center gap-1 border border-gray-200 px-2 py-1 rounded">
+                      <Download size={12} /> CSV
+                    </button>
                   </div>
                 </div>
                 <table className="w-full text-left">
@@ -355,7 +418,7 @@ export default function App() {
                       <th className="px-6 py-4">Cloud</th>
                       <th className="px-6 py-4">Resource</th>
                       <th className="px-6 py-4">Account ID</th>
-                      <th className="px-6 py-4">Detected At</th>
+                      <th className="px-6 py-4">Status</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100 bg-white">
@@ -374,7 +437,11 @@ export default function App() {
                           <div className="text-[9px] text-gray-400 uppercase font-bold">{r.resourceType}</div>
                         </td>
                         <td className="px-6 py-4 text-[11px] text-gray-400 font-mono">{r.account}</td>
-                        <td className="px-6 py-4 text-[10px] text-gray-400 font-mono">{new Date(r.detectedAt).toLocaleDateString()}</td>
+                        <td className="px-6 py-4 text-[10px] font-black uppercase tracking-tighter">
+                          <span className={r.status === Status.OPEN ? 'text-red-500' : r.status === Status.SNOOZED ? 'text-orange-400' : 'text-green-600'}>
+                            {r.status}
+                          </span>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -385,9 +452,9 @@ export default function App() {
         </main>
       </div>
 
-      {/* Frame 4: Side Panel */}
+      {/* Frame 4: Side Panel (Issue Details) */}
       <div 
-        className={`fixed inset-y-0 right-0 w-[400px] bg-white border-l border-gray-200 shadow-2xl transition-transform duration-300 z-50 flex flex-col ${selectedIssueId ? 'translate-x-0' : 'translate-x-full'}`}
+        className={`fixed inset-y-0 right-0 w-[420px] bg-white border-l border-gray-200 shadow-2xl transition-transform duration-300 z-[100] flex flex-col ${selectedIssueId ? 'translate-x-0' : 'translate-x-full'}`}
       >
         {selectedIssue && (
           <>
@@ -396,11 +463,12 @@ export default function App() {
                 <SeverityBadge sev={selectedIssue.severity} />
                 <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{selectedIssue.id}</span>
               </div>
-              <button onClick={() => setSelectedIssueId(null)} className="p-2 hover:bg-gray-100 rounded-full text-gray-400"><X size={20} /></button>
+              <button onClick={() => setSelectedIssueId(null)} className="p-2 hover:bg-gray-100 rounded-full text-gray-400 transition-colors"><X size={20} /></button>
             </header>
 
-            <div className="flex-1 overflow-y-auto p-8 space-y-10 relative">
-              <Annotation className="top-4 -left-12">Right-side panel keeps inventory context visible during triage.</Annotation>
+            <div className="flex-1 overflow-y-auto p-8 space-y-10 relative no-scrollbar">
+              {/* Repositioned annotation to not overlap content */}
+              <Annotation className="top-8 -left-12">Right-side panel keeps inventory context visible during triage.</Annotation>
               
               <section>
                 <h2 className="text-2xl font-black text-black uppercase tracking-tighter leading-tight mb-4">{selectedIssue.resourceName}</h2>
@@ -417,32 +485,51 @@ export default function App() {
               </section>
 
               <section>
-                <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-4 flex items-center gap-2"><Info size={14} /> Why this matters</h3>
+                <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-4 flex items-center gap-2"><Info size={14} /> Description</h3>
                 <p className="text-sm text-gray-800 leading-relaxed italic border-l-2 border-gray-200 pl-4">
                   {selectedIssue.description}
                 </p>
               </section>
 
               <section>
-                <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-4 flex items-center gap-2"><CheckCircle size={14} /> Recommended Remediation</h3>
+                <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-4 flex items-center gap-2"><CheckCircle size={14} /> Remediation Steps</h3>
                 <div className="text-sm font-bold text-gray-900 leading-relaxed bg-gray-50 p-4 border border-gray-100 rounded-sm whitespace-pre-line">
                   {selectedIssue.remediation}
                 </div>
-                <Annotation className="mt-4">Manual remediation text removes dependency on complex automation scripts for MVP.</Annotation>
               </section>
             </div>
 
-            <footer id="action-buttons" className="p-8 border-t border-gray-100 bg-gray-50 grid grid-cols-2 gap-4 shrink-0">
+            <footer id="action-buttons" className="p-8 border-t border-gray-100 bg-gray-50 space-y-4 shrink-0">
+              {selectedIssue.status === Status.OPEN ? (
+                <div className="grid grid-cols-2 gap-4">
+                  <button 
+                    onClick={() => handleUpdateStatus(selectedIssue.id, Status.RESOLVED)}
+                    className="py-4 bg-black text-white text-[10px] font-black uppercase tracking-widest hover:bg-gray-800 transition-all flex items-center justify-center gap-2 shadow-lg"
+                  >
+                    Mark Resolved
+                  </button>
+                  <button 
+                    onClick={() => handleUpdateStatus(selectedIssue.id, Status.SNOOZED)}
+                    className="py-4 bg-white border border-gray-200 text-gray-700 text-[10px] font-black uppercase tracking-widest hover:bg-gray-50 transition-all"
+                  >
+                    Snooze
+                  </button>
+                </div>
+              ) : (
+                <button 
+                  onClick={() => handleUpdateStatus(selectedIssue.id, Status.OPEN)}
+                  className="w-full py-4 bg-gray-200 text-black text-[10px] font-black uppercase tracking-widest hover:bg-gray-300 transition-all flex items-center justify-center gap-2"
+                >
+                  <RotateCcw size={14} /> Reopen Issue
+                </button>
+              )}
+              
               <button 
-                onClick={() => handleResolve(selectedIssue.id)}
-                className="py-4 bg-black text-white text-[10px] font-black uppercase tracking-widest hover:bg-gray-800 transition-all flex items-center justify-center gap-2 shadow-lg"
+                onClick={() => handleExport(selectedIssue.id)}
+                className="w-full py-3 bg-white border border-gray-200 text-gray-500 text-[10px] font-black uppercase tracking-widest hover:bg-gray-50 flex items-center justify-center gap-1 transition-all"
               >
-                Mark Resolved
+                <Download size={14} /> Export CSV
               </button>
-              <div className="grid grid-cols-2 gap-2">
-                <button className="py-4 bg-white border border-gray-200 text-gray-500 text-[10px] font-black uppercase tracking-widest hover:bg-gray-50">Snooze</button>
-                <button className="py-4 bg-white border border-gray-200 text-gray-500 text-[10px] font-black uppercase tracking-widest hover:bg-gray-50 flex items-center justify-center gap-1">Export CSV</button>
-              </div>
             </footer>
           </>
         )}
@@ -452,7 +539,7 @@ export default function App() {
       {selectedIssueId && (
         <div 
           onClick={() => setSelectedIssueId(null)}
-          className="fixed inset-0 bg-black/10 backdrop-blur-[1px] z-40"
+          className="fixed inset-0 bg-black/10 backdrop-blur-[1px] z-[90]"
         ></div>
       )}
     </div>
