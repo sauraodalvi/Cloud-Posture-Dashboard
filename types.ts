@@ -14,60 +14,47 @@ export enum Severity {
 
 export enum Status {
   OPEN = 'Open',
-  IN_PROGRESS = 'In Progress',
-  RESOLVED = 'Resolved',
-  ON_HOLD = 'On Hold'
+  SNOOZED = 'Snoozed',
+  RESOLVED = 'Resolved'
 }
 
+// Added COMPUTE to AssetType to fix reference errors in components.
 export enum AssetType {
-  IAM = 'Access / IAM',
-  NETWORK = 'Network',
+  IAM = 'IAM',
   STORAGE = 'Storage',
-  COMPUTE = 'Compute',
-  LOGGING = 'Logging & Monitoring',
-  COMPLIANCE = 'Compliance'
+  DB = 'DB',
+  NETWORK = 'Network',
+  COMPUTE = 'Compute'
 }
 
+// Added Environment enum to fix missing export error in components.
 export enum Environment {
-  PROD = 'Production',
+  PROD = 'Prod',
   STAGING = 'Staging',
-  DEV = 'Development'
+  DEV = 'Dev'
 }
 
-export interface AssetStats {
-  type: AssetType;
-  successRate: number; 
-  failRate: number;    
-  isMisconfig: boolean;
-  severity: Severity;
-}
-
-export interface Project {
+export interface Misconfiguration {
   id: string;
-  name: string;
-  provider: CloudProvider;
-  environment: Environment;
-  isConfigured: boolean;
-  score: number;
-  criticalCount: number;
-  highCount: number;
-  assets: AssetStats[];
-}
-
-export interface MisconfigDetail {
-  id: string;
-  projectId: string;
-  assetType: AssetType;
-  title: string;
-  description: string;
+  cloud: CloudProvider;
+  account: string;
+  resourceType: AssetType;
+  resourceName: string;
   severity: Severity;
   status: Status;
-  detectedTime: string;
+  description: string;
+  remediation: string;
+  detectedAt: string;
 }
 
-export interface DashboardSummary {
-  globalScore: number;
-  totalIssues: number;
-  severityCounts: Record<Severity, number>;
-  trend: number;
+// Added MisconfigDetail interface to fix missing export error in IssueDetails.tsx.
+export interface MisconfigDetail {
+  id: string;
+  title: string;
+  projectId: string;
+  severity: Severity;
+  status: string;
+  detectedTime: string;
+  assetType: AssetType;
+  description: string;
 }

@@ -1,186 +1,330 @@
 
-import { CloudProvider, Severity, Status, AssetType, Project, MisconfigDetail, Environment } from './types';
+import { CloudProvider, Severity, Status, AssetType, Misconfiguration, MisconfigDetail } from './types';
 
-export const CLOUD_STATS: Record<CloudProvider, { score: number; misconfigs: number; critical: number; high: number; medium: number; low: number }> = {
-  [CloudProvider.GCP]: { score: 76, misconfigs: 245, critical: 18, high: 42, medium: 85, low: 100 },
-  [CloudProvider.AWS]: { score: 82, misconfigs: 112, critical: 8, high: 24, medium: 45, low: 35 },
-  [CloudProvider.AZURE]: { score: 91, misconfigs: 58, critical: 3, high: 12, medium: 18, low: 25 },
-};
-
-export const MOCK_PROJECTS: Record<CloudProvider, Project[]> = {
-  [CloudProvider.GCP]: [
-    {
-      id: 'gcp-p1',
-      name: 'GKE-Cluster-Finance-Prod',
-      provider: CloudProvider.GCP,
-      environment: Environment.PROD,
-      isConfigured: true,
-      score: 64,
-      criticalCount: 7,
-      highCount: 15,
-      assets: []
-    },
-    {
-      id: 'gcp-p2',
-      name: 'BigQuery-Analytics-Staging',
-      provider: CloudProvider.GCP,
-      environment: Environment.STAGING,
-      isConfigured: true,
-      score: 88,
-      criticalCount: 1,
-      highCount: 5,
-      assets: []
-    },
-    {
-      id: 'gcp-p3',
-      name: 'IAM-Service-Accounts-Dev',
-      provider: CloudProvider.GCP,
-      environment: Environment.DEV,
-      isConfigured: true,
-      score: 94,
-      criticalCount: 0,
-      highCount: 2,
-      assets: []
-    }
-  ],
-  [CloudProvider.AWS]: [
-    {
-      id: 'aws-p1',
-      name: 'E-Commerce-Core-Prod',
-      provider: CloudProvider.AWS,
-      environment: Environment.PROD,
-      isConfigured: true,
-      score: 81,
-      criticalCount: 4,
-      highCount: 12,
-      assets: []
-    },
-    {
-      id: 'aws-p2',
-      name: 'Lambda-Microservices-Staging',
-      provider: CloudProvider.AWS,
-      environment: Environment.STAGING,
-      isConfigured: true,
-      score: 95,
-      criticalCount: 0,
-      highCount: 1,
-      assets: []
-    }
-  ],
-  [CloudProvider.AZURE]: [
-    {
-      id: 'az-p1',
-      name: 'Azure-AD-Identity-Prod',
-      provider: CloudProvider.AZURE,
-      environment: Environment.PROD,
-      isConfigured: true,
-      score: 96,
-      criticalCount: 1,
-      highCount: 3,
-      assets: []
-    },
-    {
-      id: 'az-p2',
-      name: 'SQL-Managed-Instances',
-      provider: CloudProvider.AZURE,
-      environment: Environment.STAGING,
-      isConfigured: true,
-      score: 82,
-      criticalCount: 2,
-      highCount: 8,
-      assets: []
-    }
-  ]
-};
-
-// Expanded issues to match the counts displayed in the Project Cards
-export const MOCK_DETAILED_ISSUES: MisconfigDetail[] = [
-  // GCP - gcp-p1 (Finance Prod) - Needs 7 Critical, 15 High
+export const MOCK_RECORDS: Misconfiguration[] = [
   {
-    id: 'iss-g1', projectId: 'gcp-p1', assetType: AssetType.NETWORK,
-    title: 'Kubernetes API Server is Publicly Accessible',
-    description: 'The GKE control plane endpoint is open to 0.0.0.0/0. This exposes your cluster to scanning and brute force.',
-    severity: Severity.CRITICAL, status: Status.OPEN, detectedTime: '4 mins ago'
+    id: 'ISSUE-001',
+    cloud: CloudProvider.AWS,
+    account: 'aws-prod-01',
+    resourceType: AssetType.IAM,
+    resourceName: 'admin-over-privileged',
+    severity: Severity.CRITICAL,
+    status: Status.OPEN,
+    description: 'User "deploy-bot" has full AdministratorAccess. Violates least-privilege principle.',
+    remediation: 'Attach a scoped-down policy with only required permissions.',
+    detectedAt: '2024-05-01T10:00:00Z'
   },
   {
-    id: 'iss-g1-2', projectId: 'gcp-p1', assetType: AssetType.COMPUTE,
-    title: 'Workload Identity is not enabled',
-    description: 'Pods are using default Node Service Accounts, which are overly permissive.',
-    severity: Severity.CRITICAL, status: Status.OPEN, detectedTime: '12 mins ago'
+    id: 'ISSUE-002',
+    cloud: CloudProvider.AZURE,
+    account: 'azure-main',
+    resourceType: AssetType.IAM,
+    resourceName: 'global-admin-mfa-disabled',
+    severity: Severity.CRITICAL,
+    status: Status.OPEN,
+    description: 'Global Administrator "jordan@company.com" does not have MFA enabled.',
+    remediation: 'Enable Multi-Factor Authentication immediately.',
+    detectedAt: '2024-05-01T11:30:00Z'
   },
   {
-    id: 'iss-g1-3', projectId: 'gcp-p1', assetType: AssetType.NETWORK,
-    title: 'Unrestricted Egress to Internal Metadata',
-    description: 'Kubernetes pods can reach the cloud metadata server, allowing potential privilege escalation.',
-    severity: Severity.CRITICAL, status: Status.OPEN, detectedTime: '15 mins ago'
+    id: 'ISSUE-003',
+    cloud: CloudProvider.GCP,
+    account: 'gcp-data-lake',
+    resourceType: AssetType.STORAGE,
+    resourceName: 'public-bucket-detected',
+    severity: Severity.CRITICAL,
+    status: Status.OPEN,
+    description: 'Storage bucket "customer-pii-v2" is publicly accessible to allAuthenticatedUsers.',
+    remediation: 'Remove public access and enforce bucket-level IAM.',
+    detectedAt: '2024-05-02T09:15:00Z'
   },
   {
-    id: 'iss-g1-4', projectId: 'gcp-p1', assetType: AssetType.IAM,
-    title: 'Key Rotation Policy Not Enforced',
-    description: 'KMS keys have not been rotated in over 365 days. Violates PCI-DSS.',
-    severity: Severity.CRITICAL, status: Status.OPEN, detectedTime: '22 mins ago'
+    id: 'ISSUE-004',
+    cloud: CloudProvider.AWS,
+    account: 'aws-prod-01',
+    resourceType: AssetType.DB,
+    resourceName: 'rds-unencrypted-at-rest',
+    severity: Severity.HIGH,
+    status: Status.OPEN,
+    description: 'Production RDS instance "billing-db" is not encrypted at rest.',
+    remediation: 'Enable storage encryption using a KMS CMK.',
+    detectedAt: '2024-05-02T14:00:00Z'
   },
   {
-    id: 'iss-g1-5', projectId: 'gcp-p1', assetType: AssetType.STORAGE,
-    title: 'Unencrypted Disk Volumes (Production)',
-    description: 'Persistent volumes are not using Customer Managed Encryption Keys (CMEK).',
-    severity: Severity.CRITICAL, status: Status.OPEN, detectedTime: '30 mins ago'
+    id: 'ISSUE-005',
+    cloud: CloudProvider.AZURE,
+    account: 'azure-main',
+    resourceType: AssetType.NETWORK,
+    resourceName: 'nsg-ssh-open-anywhere',
+    severity: Severity.HIGH,
+    status: Status.OPEN,
+    description: 'NSG allows inbound SSH (22) from 0.0.0.0/0.',
+    remediation: 'Restrict SSH access to corporate CIDR blocks.',
+    detectedAt: '2024-05-03T08:20:00Z'
   },
   {
-    id: 'iss-g1-6', projectId: 'gcp-p1', assetType: AssetType.NETWORK,
-    title: 'Default Network in Use',
-    description: 'The cluster is deployed in the "default" VPC. Recommendation: Use a custom VPC with restricted firewall rules.',
-    severity: Severity.CRITICAL, status: Status.OPEN, detectedTime: '45 mins ago'
+    id: 'ISSUE-006',
+    cloud: CloudProvider.AWS,
+    account: 'aws-stg-02',
+    resourceType: AssetType.IAM,
+    resourceName: 'unused-access-keys',
+    severity: Severity.MEDIUM,
+    status: Status.OPEN,
+    description: 'Access keys for "legacy-worker" have not been rotated in 180 days.',
+    remediation: 'Deactivate old keys and rotate credentials.',
+    detectedAt: '2024-05-03T10:45:00Z'
   },
   {
-    id: 'iss-g1-7', projectId: 'gcp-p1', assetType: AssetType.IAM,
-    title: 'Overly Permissive GKE Cluster Admin',
-    description: 'High number of users (12) have the cluster-admin role. Reduces accountability.',
-    severity: Severity.CRITICAL, status: Status.OPEN, detectedTime: '1 hour ago'
+    id: 'ISSUE-007',
+    cloud: CloudProvider.GCP,
+    account: 'gcp-corp-01',
+    resourceType: AssetType.IAM,
+    resourceName: 'primitive-roles-assigned',
+    severity: Severity.MEDIUM,
+    status: Status.OPEN,
+    description: 'User has "Owner" primitive role. Should use predefined granular roles.',
+    remediation: 'Replace Owner role with specific IAM roles.',
+    detectedAt: '2024-05-03T16:00:00Z'
   },
-  // High severity placeholders for gcp-p1...
-  ...Array.from({ length: 15 }).map((_, i) => ({
-    id: `iss-g1-h-${i}`, projectId: 'gcp-p1', assetType: AssetType.COMPUTE,
-    title: `GKE Node Optimization Warning #${i + 1}`,
-    description: 'Node pool configurations do not meet recommended performance and security baselines.',
-    severity: Severity.HIGH, status: Status.OPEN, detectedTime: `${i + 2} hours ago`
-  })),
-
-  // GCP - gcp-p2 (BigQuery Staging)
   {
-    id: 'iss-g2', projectId: 'gcp-p2', assetType: AssetType.STORAGE,
-    title: 'Public Access to BigQuery Datasets',
-    description: 'The dataset "marketing_pii" has allAuthenticatedUsers permission, allowing anyone to query data.',
-    severity: Severity.CRITICAL, status: Status.OPEN, detectedTime: '18 mins ago'
+    id: 'ISSUE-008',
+    cloud: CloudProvider.AWS,
+    account: 'aws-prod-01',
+    resourceType: AssetType.IAM,
+    resourceName: 'root-account-active',
+    severity: Severity.CRITICAL,
+    status: Status.OPEN,
+    description: 'Root user login detected in the last 24 hours.',
+    remediation: 'Audit root activity and enforce IAM user login.',
+    detectedAt: '2024-05-04T02:00:00Z'
   },
-
-  // AWS - aws-p1 (E-Commerce Prod)
   {
-    id: 'iss-a1', projectId: 'aws-p1', assetType: AssetType.STORAGE,
-    title: 'Public Read Access on S3 Bucket "customer-attachments"',
-    description: 'Bucket ACL allows "Everyone" read access. Sensitive files are potentially exposed via direct URL.',
-    severity: Severity.CRITICAL, status: Status.OPEN, detectedTime: '12 mins ago'
+    id: 'ISSUE-009',
+    cloud: CloudProvider.AZURE,
+    account: 'azure-dev-sub',
+    resourceType: AssetType.STORAGE,
+    resourceName: 'diag-logs-disabled',
+    severity: Severity.LOW,
+    status: Status.OPEN,
+    description: 'Diagnostic logging is disabled for sensitive storage account.',
+    remediation: 'Enable diagnostic settings to Log Analytics.',
+    detectedAt: '2024-05-04T05:30:00Z'
   },
-
-  // Azure - az-p1 (Identity Prod)
   {
-    id: 'iss-z1', projectId: 'az-p1', assetType: AssetType.IAM,
-    title: 'Global Administrator without MFA Enabled',
-    description: 'A user with the Global Administrator role has not registered for Multi-Factor Authentication (MFA).',
-    severity: Severity.CRITICAL, status: Status.OPEN, detectedTime: '2 mins ago'
+    id: 'ISSUE-010',
+    cloud: CloudProvider.GCP,
+    account: 'gcp-data-lake',
+    resourceType: AssetType.IAM,
+    resourceName: 'service-account-key-downloaded',
+    severity: Severity.CRITICAL,
+    status: Status.OPEN,
+    description: 'User-managed service account key created for core service account.',
+    remediation: 'Delete user-managed key and use Workload Identity.',
+    detectedAt: '2024-05-04T09:00:00Z'
+  },
+  {
+    id: 'ISSUE-011',
+    cloud: CloudProvider.AWS,
+    account: 'aws-stg-02',
+    resourceType: AssetType.NETWORK,
+    resourceName: 'vpc-flow-logs-disabled',
+    severity: Severity.MEDIUM,
+    status: Status.OPEN,
+    description: 'VPC Flow Logs not enabled for staging environment.',
+    remediation: 'Enable flow logs for visibility into network traffic.',
+    detectedAt: '2024-05-04T12:00:00Z'
+  },
+  {
+    id: 'ISSUE-012',
+    cloud: CloudProvider.AZURE,
+    account: 'azure-main',
+    resourceType: AssetType.DB,
+    resourceName: 'sql-audit-disabled',
+    severity: Severity.MEDIUM,
+    status: Status.OPEN,
+    description: 'Auditing is disabled for Azure SQL Server.',
+    remediation: 'Enable SQL audit logs to storage account.',
+    detectedAt: '2024-05-04T15:00:00Z'
+  },
+  {
+    id: 'ISSUE-013',
+    cloud: CloudProvider.GCP,
+    account: 'gcp-corp-01',
+    resourceType: AssetType.IAM,
+    resourceName: 'iam-external-users',
+    severity: Severity.HIGH,
+    status: Status.OPEN,
+    description: 'External domain users have broad access to project resources.',
+    remediation: 'Review and remove non-corporate domain users.',
+    detectedAt: '2024-05-05T08:00:00Z'
+  },
+  {
+    id: 'ISSUE-014',
+    cloud: CloudProvider.AWS,
+    account: 'aws-prod-01',
+    resourceType: AssetType.STORAGE,
+    resourceName: 's3-versioning-disabled',
+    severity: Severity.LOW,
+    status: Status.OPEN,
+    description: 'Versioning is disabled for the deployment artifacts bucket.',
+    remediation: 'Enable bucket versioning for data durability.',
+    detectedAt: '2024-05-05T10:00:00Z'
+  },
+  {
+    id: 'ISSUE-015',
+    cloud: CloudProvider.AZURE,
+    account: 'azure-dev-sub',
+    resourceType: AssetType.NETWORK,
+    resourceName: 'rdp-open-to-internet',
+    severity: Severity.HIGH,
+    status: Status.OPEN,
+    description: 'Inbound RDP port (3389) open to the public internet.',
+    remediation: 'Close port 3389 or restrict to VPN source IP.',
+    detectedAt: '2024-05-05T13:00:00Z'
+  },
+  {
+    id: 'ISSUE-016',
+    cloud: CloudProvider.GCP,
+    account: 'gcp-data-lake',
+    resourceType: AssetType.DB,
+    resourceName: 'cloudsql-public-ip',
+    severity: Severity.HIGH,
+    status: Status.OPEN,
+    description: 'Cloud SQL instance has a public IP address assigned.',
+    remediation: 'Disable public IP and use Private Service Access.',
+    detectedAt: '2024-05-05T16:00:00Z'
+  },
+  {
+    id: 'ISSUE-017',
+    cloud: CloudProvider.AWS,
+    account: 'aws-stg-02',
+    resourceType: AssetType.IAM,
+    resourceName: 'inline-policy-detected',
+    severity: Severity.LOW,
+    status: Status.OPEN,
+    description: 'User has an inline policy attached instead of a managed policy.',
+    remediation: 'Convert inline policy to a customer-managed policy.',
+    detectedAt: '2024-05-06T09:00:00Z'
+  },
+  {
+    id: 'ISSUE-018',
+    cloud: CloudProvider.AZURE,
+    account: 'azure-main',
+    resourceType: AssetType.STORAGE,
+    resourceName: 'insecure-transfer-allowed',
+    severity: Severity.MEDIUM,
+    status: Status.OPEN,
+    description: 'Storage account allows non-HTTPS traffic.',
+    remediation: 'Enable "Secure transfer required" in storage settings.',
+    detectedAt: '2024-05-06T11:00:00Z'
+  },
+  {
+    id: 'ISSUE-019',
+    cloud: CloudProvider.GCP,
+    account: 'gcp-corp-01',
+    resourceType: AssetType.IAM,
+    resourceName: 'default-service-account-used',
+    severity: Severity.MEDIUM,
+    status: Status.OPEN,
+    description: 'Compute instances are using the highly-privileged default service account.',
+    remediation: 'Assign a custom service account with minimal scopes.',
+    detectedAt: '2024-05-06T14:00:00Z'
+  },
+  {
+    id: 'ISSUE-020',
+    cloud: CloudProvider.AWS,
+    account: 'aws-prod-01',
+    resourceType: AssetType.IAM,
+    resourceName: 'critical-iam-misconfig',
+    severity: Severity.CRITICAL,
+    status: Status.OPEN,
+    description: 'Undocumented critical IAM configuration detected.',
+    remediation: 'Perform immediate audit of all security groups and IAM roles.',
+    detectedAt: '2024-05-06T17:00:00Z'
   }
 ];
 
-export const SEVERITY_COLOR_MAP = {
-  [Severity.CRITICAL]: 'bg-rose-600',
-  [Severity.HIGH]: 'bg-amber-500',
-  [Severity.MEDIUM]: 'bg-yellow-400',
-  [Severity.LOW]: 'bg-blue-500',
+export const SEVERITY_COLORS: Record<Severity, string> = {
+  [Severity.CRITICAL]: 'text-red-600 bg-white border-red-600',
+  [Severity.HIGH]: 'text-orange-600 bg-white border-orange-600',
+  [Severity.MEDIUM]: 'text-yellow-600 bg-white border-yellow-600',
+  [Severity.LOW]: 'text-gray-400 bg-white border-gray-400'
 };
 
-export const SEVERITY_TEXT_MAP = {
-  [Severity.CRITICAL]: 'text-rose-600',
-  [Severity.HIGH]: 'text-amber-600',
+// Added missing members for IssueDetails.tsx
+export const MOCK_DETAILED_ISSUES: MisconfigDetail[] = [
+  {
+    id: 'ISSUE-001',
+    title: 'S3 Public Access Block Disabled',
+    projectId: 'aws-prod-01',
+    severity: Severity.CRITICAL,
+    status: 'Open',
+    detectedTime: '2 hours ago',
+    assetType: AssetType.STORAGE,
+    description: 'The S3 bucket "customer-data" has public access blocks disabled, potentially exposing sensitive data.'
+  },
+  {
+    id: 'ISSUE-002',
+    title: 'MFA Not Enabled for Global Admin',
+    projectId: 'azure-main',
+    severity: Severity.CRITICAL,
+    status: 'Open',
+    detectedTime: '3 hours ago',
+    assetType: AssetType.IAM,
+    description: 'A global administrator account does not have multi-factor authentication enabled.'
+  },
+  {
+    id: 'ISSUE-003',
+    title: 'Publicly Accessible Storage Bucket',
+    projectId: 'gcp-data-lake',
+    severity: Severity.CRITICAL,
+    status: 'Open',
+    detectedTime: '5 hours ago',
+    assetType: AssetType.STORAGE,
+    description: 'A Cloud Storage bucket is publicly accessible, which could lead to data leakage.'
+  },
+  {
+    id: 'ISSUE-004',
+    title: 'Overly Permissive IAM Policy',
+    projectId: 'aws-stg-02',
+    severity: Severity.HIGH,
+    status: 'Open',
+    detectedTime: '1 day ago',
+    assetType: AssetType.IAM,
+    description: 'An IAM policy allows excessive permissions to multiple services.'
+  },
+  {
+    id: 'ISSUE-005',
+    title: 'NSG SSH Open to Internet',
+    projectId: 'azure-main',
+    severity: Severity.HIGH,
+    status: 'Open',
+    detectedTime: '1 day ago',
+    assetType: AssetType.NETWORK,
+    description: 'Network Security Group allows inbound SSH traffic from any IP address.'
+  },
+  {
+    id: 'ISSUE-006',
+    title: 'Unencrypted Compute Disk',
+    projectId: 'gcp-corp-01',
+    severity: Severity.MEDIUM,
+    status: 'Open',
+    detectedTime: '2 days ago',
+    assetType: AssetType.COMPUTE,
+    description: 'A compute instance disk is not encrypted with a customer-managed key.'
+  }
+];
+
+export const SEVERITY_TEXT_MAP: Record<Severity, string> = {
+  [Severity.CRITICAL]: 'text-red-600',
+  [Severity.HIGH]: 'text-orange-600',
   [Severity.MEDIUM]: 'text-yellow-600',
-  [Severity.LOW]: 'text-blue-600',
+  [Severity.LOW]: 'text-gray-400'
+};
+
+export const SEVERITY_COLOR_MAP: Record<Severity, string> = {
+  [Severity.CRITICAL]: 'bg-red-500',
+  [Severity.HIGH]: 'bg-orange-500',
+  [Severity.MEDIUM]: 'bg-yellow-500',
+  [Severity.LOW]: 'bg-gray-400'
 };
