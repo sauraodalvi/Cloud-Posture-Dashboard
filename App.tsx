@@ -1,16 +1,16 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { 
-  Shield, 
-  List, 
-  Layout, 
-  ChevronRight, 
-  X, 
-  Filter, 
-  Clock, 
-  CheckCircle, 
-  Info, 
-  Layers, 
+import {
+  Shield,
+  List,
+  Layout,
+  ChevronRight,
+  X,
+  Filter,
+  Clock,
+  CheckCircle,
+  Info,
+  Layers,
   Zap,
   ChevronLeft,
   HelpCircle,
@@ -64,13 +64,15 @@ export default function App() {
   const [showAnnotations, setShowAnnotations] = useState(true);
   const [showCloudDropdown, setShowCloudDropdown] = useState(false);
   const [globalCloudFilter, setGlobalCloudFilter] = useState<CloudProvider | 'ALL'>('ALL');
-  
+
+  const [highlightToggle, setHighlightToggle] = useState(false);
+
   const [filters, setFilters] = useState({
     severity: [] as Severity[],
     cloud: [] as CloudProvider[],
     resourceType: [] as AssetType[]
   });
-  
+
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
   const [records, setRecords] = useState<Misconfiguration[]>(MOCK_RECORDS);
   const [walkthroughActive, setWalkthroughActive] = useState(false);
@@ -85,7 +87,7 @@ export default function App() {
       const sMatch = filters.severity.length === 0 || filters.severity.includes(r.severity);
       const cMatch = filters.cloud.length === 0 || filters.cloud.includes(r.cloud);
       const tMatch = filters.resourceType.length === 0 || filters.resourceType.includes(r.resourceType);
-      
+
       return gCloudMatch && sMatch && cMatch && tMatch;
     });
   }, [records, filters, globalCloudFilter]);
@@ -104,8 +106,7 @@ export default function App() {
   };
 
   const handleExport = (id?: string) => {
-    const target = id ? `Issue ${id}` : "Current View";
-    alert(`Exporting ${target} to CSV...`);
+    console.log(`Exporting ${id || "view"} to CSV...`);
   };
 
   const toggleFilter = (cat: keyof typeof filters, val: any) => {
@@ -123,11 +124,22 @@ export default function App() {
     });
   };
 
+  const triggerHighlight = () => {
+    setHighlightToggle(true);
+    setTimeout(() => setHighlightToggle(false), 800);
+  };
+
   // UI Components
   const Annotation = ({ children, className = "" }: { children?: React.ReactNode, className?: string }) => {
     if (!showAnnotations) return null;
     return (
-      <div className={`absolute z-[60] bg-yellow-100 border border-yellow-300 p-2 text-[10px] font-bold shadow-md rotate-1 w-44 pointer-events-none select-none ${className}`}>
+      <div
+        onClick={(e) => {
+          e.stopPropagation();
+          triggerHighlight();
+        }}
+        className={`absolute z-[60] bg-yellow-100 border border-yellow-300 p-2 text-[10px] font-bold shadow-md rotate-1 w-44 cursor-pointer hover:scale-105 transition-transform select-none ${className}`}
+      >
         <div className="flex gap-1.5 items-start">
           <Zap size={10} className="mt-0.5 text-yellow-600 shrink-0" />
           <p className="leading-tight">{children}</p>
@@ -157,7 +169,7 @@ export default function App() {
           <p className="text-xs text-gray-700 leading-relaxed mb-6 italic">“{step.text}”</p>
           <div className="flex justify-between">
             <button onClick={() => setWalkthroughActive(false)} className="text-[10px] font-bold uppercase text-gray-400">Skip</button>
-            <button 
+            <button
               onClick={() => {
                 if (walkthroughStep < WALKTHROUGH_STEPS.length - 1) setWalkthroughStep(prev => prev + 1);
                 else setWalkthroughActive(false);
@@ -179,59 +191,119 @@ export default function App() {
       <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-8 grayscale">
         <div className="max-w-4xl w-full bg-white border border-gray-200 shadow-2xl p-16 relative overflow-hidden">
           {/* Repositioned annotation to not overlap the main title */}
-          <Annotation className="top-12 right-12">Frame 1: Reviewer context & persona alignment.</Annotation>
-          
           <header className="mb-12 border-b-4 border-black pb-6">
-            <h1 className="text-5xl font-black uppercase tracking-tighter text-black">AccuKnox Guardrail</h1>
-            <p className="text-gray-400 font-bold uppercase tracking-widest text-xs mt-2">Internal Staff Prototype — Unified Cloud Posture</p>
+            <h1 className="text-5xl font-black uppercase tracking-tighter text-black">AccuKnox</h1>
+            <p className="text-gray-400 font-bold uppercase tracking-widest text-xs mt-2">Cloud Posture Dashboard — by Saurao Dalvi</p>
           </header>
 
-          <div className="grid grid-cols-2 gap-16 mb-16">
-            <section>
-              <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-4">Problem Statement</h2>
-              <p className="text-gray-800 text-sm leading-relaxed">
-                Security engineers struggle to prioritize risks across AWS, Azure, and GCP accounts. This console focuses on identifying top risks in under 3 minutes via a "table-first" operational view.
-              </p>
-            </section>
-            <section>
-              <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-4">Target Persona</h2>
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-gray-100 rounded flex items-center justify-center font-bold text-xs">JL</div>
-                <div>
-                  <p className="text-sm font-bold text-black">Jordan Lee</p>
-                  <p className="text-[10px] text-gray-500 uppercase font-bold">Senior Cloud Security Engineer</p>
-                </div>
-              </div>
-            </section>
-          </div>
+          <div className="grid grid-cols-2 gap-12 mb-12">
+            <div className="space-y-12">
+              <section>
+                <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-4">Problem Statement</h2>
+                <p className="text-gray-800 text-sm leading-relaxed">
+                  Security engineers struggle to prioritize risks across AWS, Azure, and GCP accounts. This console focuses on identifying top risks in under 3 minutes via a "table-first" operational view.
+                </p>
+              </section>
 
-          <div className="grid grid-cols-2 gap-8 mb-16">
-             <section>
-              <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-4">Success Metrics</h2>
-              <ul className="text-xs font-bold text-gray-700 space-y-2">
-                <li className="flex items-center gap-2">• <span className="text-black">Critical risk identification in {"<"} 10s</span></li>
-                <li className="flex items-center gap-2">• <span className="text-black">Zero-setup multi-cloud visibility</span></li>
-                <li className="flex items-center gap-2">• <span className="text-black">Decisive manual remediation guidance</span></li>
-              </ul>
-            </section>
-            <section>
-              <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-4">Prototype Frames</h2>
-              <div className="grid grid-cols-3 gap-2 opacity-30">
-                <div className="h-10 bg-gray-200 border border-gray-300"></div>
-                <div className="h-10 bg-gray-200 border border-gray-300"></div>
-                <div className="h-10 bg-gray-200 border border-gray-300"></div>
+              <section>
+                <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-4">Success Metrics</h2>
+                <ul className="text-xs font-bold text-gray-700 space-y-2">
+                  <li className="flex items-center gap-2">• <span className="text-black">Critical risk identification in {"<"} 10s</span></li>
+                  <li className="flex items-center gap-2">• <span className="text-black">Zero-setup multi-cloud visibility</span></li>
+                  <li className="flex items-center gap-2">• <span className="text-black">Decisive manual remediation guidance</span></li>
+                </ul>
+              </section>
+            </div>
+
+            <section className="bg-gray-50 p-6 rounded-sm border border-gray-200 h-80 overflow-y-auto custom-scrollbar shadow-inner text-xs">
+              <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-4 sticky top-0 bg-gray-50 pb-2 border-b border-gray-200 w-full z-10">
+                User Guide & Glossary
+              </h2>
+              <div className="space-y-6">
+
+                {/* Terminology */}
+                <div>
+                  <h3 className="text-[10px] font-black uppercase text-black mb-2 flex items-center gap-2 border-b border-gray-200 pb-1">
+                    <HelpCircle size={12} /> 1. Terminology "Un-Complicated"
+                  </h3>
+
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="font-bold text-black mb-1">The Cloud Providers (The "Landlords")</h4>
+                      <p className="text-gray-600 mb-1">Renting tech space instead of buying.</p>
+                      <ul className="pl-4 list-disc text-gray-600 space-y-1">
+                        <li><strong className="text-black">AWS/Azure/GCP:</strong> Landlords you rent from (Amazon, Microsoft, Google).</li>
+                      </ul>
+                    </div>
+
+                    <div>
+                      <h4 className="font-bold text-black mb-1">The "Assets" (Your Digital Stuff)</h4>
+                      <ul className="pl-4 list-disc text-gray-600 space-y-1">
+                        <li><strong className="text-black">IAM (Keycard System):</strong> Controls access. <em>Risk: Giving master keys to strangers.</em></li>
+                        <li><strong className="text-black">S3 (Digital Filing Cabinets):</strong> Stores files. <em>Risk: Leaving the drawer open for public access.</em></li>
+                        <li><strong className="text-black">EC2 (Virtual Computers):</strong> Servers running apps. <em>Risk: Leaving windows (ports) open.</em></li>
+                      </ul>
+                    </div>
+
+                    <div>
+                      <h4 className="font-bold text-black mb-1">The Risk Levels</h4>
+                      <ul className="pl-4 list-disc text-gray-600 space-y-1">
+                        <li><strong className="text-red-600">Critical (🚨):</strong> EMERGENCY. Front door unlocked. Fix NOW.</li>
+                        <li><strong className="text-orange-500">High:</strong> URGENT. Broken window latch. Don't ignore.</li>
+                        <li><strong className="text-gray-500">Medium/Low:</strong> MAINTENANCE. Housekeeping tasks.</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                {/* App Usage */}
+                <div className="pt-2">
+                  <h3 className="text-[10px] font-black uppercase text-black mb-2 flex items-center gap-2 border-b border-gray-200 pb-1">
+                    <Layout size={12} /> 2. How to Use the App
+                  </h3>
+
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="font-bold text-black mb-1">Overview (Morning Coffee View)</h4>
+                      <p className="text-gray-600">Get a 10-second health check. If "Critical Risks" &gt; 0, that's your job today.</p>
+                    </div>
+
+                    <div>
+                      <h4 className="font-bold text-black mb-1">Inventory (To-Do List)</h4>
+                      <ul className="pl-4 list-disc text-gray-600 space-y-1">
+                        <li><strong className="text-black">Filtering:</strong> Focus on one thing (e.g., "Today is IAM day").</li>
+                        <li><strong className="text-black">Bulk Actions:</strong> Select multiple rows to "Snooze" false alarms.</li>
+                      </ul>
+                    </div>
+
+                    <div>
+                      <h4 className="font-bold text-black mb-1">Issue Details (Doctor's Note)</h4>
+                      <p className="text-gray-600">Click any row to see:</p>
+                      <ul className="pl-4 list-disc text-gray-600 space-y-1">
+                        <li><strong className="text-black">Description:</strong> Plain English explanation of the problem.</li>
+                        <li><strong className="text-black">Remediation:</strong> Copy-paste commands to fix it.</li>
+                      </ul>
+                    </div>
+
+                    <div>
+                      <h4 className="font-bold text-black mb-1">Sticky Notes (Training Wheels)</h4>
+                      <p className="text-gray-600">Yellow notes explain features. Click any note to find the "Toggle" button.</p>
+                    </div>
+                  </div>
+                </div>
+
               </div>
             </section>
           </div>
 
           <div className="flex justify-between items-center">
-            <button 
+            <button
               onClick={() => setShowAnnotations(!showAnnotations)}
-              className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2 text-gray-400 hover:text-black transition-colors"
+              className={`text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all duration-300 ${highlightToggle ? 'text-yellow-600 scale-110' : 'text-gray-400 hover:text-black'}`}
             >
               <StickyNote size={14} /> {showAnnotations ? 'Hide' : 'Show'} Annotations
             </button>
-            <button 
+            <button
               onClick={() => {
                 setCurrentFrame('OVERVIEW');
                 setWalkthroughActive(true);
@@ -249,7 +321,7 @@ export default function App() {
   return (
     <div className="flex h-screen bg-gray-50 grayscale overflow-hidden relative">
       <WalkthroughOverlay />
-      
+
       {/* Sidebar */}
       <aside className="w-16 bg-white border-r border-gray-200 flex flex-col items-center py-6 gap-8 shrink-0 z-50">
         <Shield size={28} className="text-black" />
@@ -258,7 +330,13 @@ export default function App() {
           <button onClick={() => setCurrentFrame('LIST')} className={`p-2 rounded ${currentFrame === 'LIST' ? 'bg-gray-100 text-black' : 'text-gray-400 hover:text-black'}`} title="Inventory"><List size={20} /></button>
         </nav>
         <div className="mt-auto flex flex-col gap-4">
-          <button onClick={() => setShowAnnotations(!showAnnotations)} className={`p-2 rounded transition-colors ${showAnnotations ? 'text-yellow-600 bg-yellow-50 border border-yellow-200' : 'text-gray-400 hover:text-black'}`} title="Toggle Notes"><StickyNote size={20} /></button>
+          <button
+            onClick={() => setShowAnnotations(!showAnnotations)}
+            className={`p-2 rounded transition-all duration-300 ${highlightToggle ? 'ring-4 ring-yellow-400 bg-yellow-200 scale-110' : ''} ${showAnnotations ? 'text-yellow-600 bg-yellow-50 border border-yellow-200' : 'text-gray-400 hover:text-black'}`}
+            title="Toggle Notes"
+          >
+            <StickyNote size={20} />
+          </button>
           <button onClick={() => { setWalkthroughStep(0); setWalkthroughActive(true); }} className="p-2 text-gray-400 hover:text-black" title="Help"><HelpCircle size={20} /></button>
         </div>
       </aside>
@@ -268,11 +346,11 @@ export default function App() {
           <div className="flex items-center gap-6 relative">
             <h2 className="text-sm font-black uppercase tracking-tight">{currentFrame === 'OVERVIEW' ? 'Posture Overview' : 'Detailed Inventory'}</h2>
             <div className="h-4 w-px bg-gray-200"></div>
-            
+
             {/* Functional Cloud Filter Dropdown */}
             <div className="relative">
-              <div 
-                id="cloud-filter" 
+              <div
+                id="cloud-filter"
                 onClick={() => setShowCloudDropdown(!showCloudDropdown)}
                 className="flex items-center gap-2 text-[10px] font-bold text-black border border-black px-3 py-1 bg-white rounded-sm cursor-pointer hover:bg-gray-50 transition-colors"
               >
@@ -280,7 +358,7 @@ export default function App() {
                 <span className="uppercase">{globalCloudFilter === 'ALL' ? 'ALL CONNECTED CLOUDS' : globalCloudFilter}</span>
                 <ChevronDown size={12} className={`transition-transform ${showCloudDropdown ? 'rotate-180' : ''}`} />
               </div>
-              
+
               {showCloudDropdown && (
                 <div className="absolute top-full left-0 mt-1 w-48 bg-white border border-black shadow-xl z-[70] py-1">
                   {['ALL', ...Object.values(CloudProvider)].map((cloud) => (
@@ -298,17 +376,11 @@ export default function App() {
                 </div>
               )}
             </div>
-            
+
             <Annotation className="top-12 left-0">All-cloud default ensures comprehensive visibility, but filterable per account.</Annotation>
           </div>
           <div className="flex items-center gap-4">
-            <button 
-              onClick={() => setShowAnnotations(!showAnnotations)}
-              className="p-1.5 rounded-full hover:bg-gray-100 transition-colors text-gray-400"
-              title="Toggle Sticky Notes"
-            >
-              <StickyNote size={16} />
-            </button>
+
             <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
               <Clock size={12} /> Sync: 2m ago
             </div>
@@ -339,7 +411,7 @@ export default function App() {
                 <Annotation className="-top-6 right-0">Table-first design prioritizes speed over visual charts.</Annotation>
                 <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-gray-50">
                   <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-400">Urgent Findings ({globalCloudFilter === 'ALL' ? 'All' : globalCloudFilter})</h3>
-                  <button onClick={() => setCurrentFrame('LIST')} className="text-[10px] font-black text-black hover:underline uppercase flex items-center gap-1">Inventory Explorer <ArrowRight size={12}/></button>
+                  <button onClick={() => setCurrentFrame('LIST')} className="text-[10px] font-black text-black hover:underline uppercase flex items-center gap-1">Inventory Explorer <ArrowRight size={12} /></button>
                 </div>
                 <table className="w-full text-left">
                   <thead>
@@ -392,7 +464,7 @@ export default function App() {
                   <div className="flex items-center gap-4 relative">
                     <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-400">Full Inventory ({filteredRecords.length})</h3>
                     <div className="h-4 w-px bg-gray-200"></div>
-                    <button 
+                    <button
                       disabled={selectedRows.size === 0}
                       onClick={handleSnoozeBulk}
                       className={`px-4 py-1.5 text-[10px] font-black uppercase border tracking-widest transition-all ${selectedRows.size > 0 ? 'bg-black text-white border-black shadow-lg' : 'bg-gray-50 text-gray-300 border-gray-100 cursor-not-allowed'}`}
@@ -423,7 +495,7 @@ export default function App() {
                   </thead>
                   <tbody className="divide-y divide-gray-100 bg-white">
                     {filteredRecords.map(r => (
-                      <tr 
+                      <tr
                         key={r.id} onClick={() => setSelectedIssueId(r.id)}
                         className={`hover:bg-gray-50 cursor-pointer transition-colors ${selectedRows.has(r.id) ? 'bg-gray-100' : ''}`}
                       >
@@ -453,7 +525,7 @@ export default function App() {
       </div>
 
       {/* Frame 4: Side Panel (Issue Details) */}
-      <div 
+      <div
         className={`fixed inset-y-0 right-0 w-[420px] bg-white border-l border-gray-200 shadow-2xl transition-transform duration-300 z-[100] flex flex-col ${selectedIssueId ? 'translate-x-0' : 'translate-x-full'}`}
       >
         {selectedIssue && (
@@ -468,8 +540,7 @@ export default function App() {
 
             <div className="flex-1 overflow-y-auto p-8 space-y-10 relative no-scrollbar">
               {/* Repositioned annotation to not overlap content */}
-              <Annotation className="top-8 -left-12">Right-side panel keeps inventory context visible during triage.</Annotation>
-              
+
               <section>
                 <h2 className="text-2xl font-black text-black uppercase tracking-tighter leading-tight mb-4">{selectedIssue.resourceName}</h2>
                 <div className="grid grid-cols-2 gap-4">
@@ -502,13 +573,13 @@ export default function App() {
             <footer id="action-buttons" className="p-8 border-t border-gray-100 bg-gray-50 space-y-4 shrink-0">
               {selectedIssue.status === Status.OPEN ? (
                 <div className="grid grid-cols-2 gap-4">
-                  <button 
+                  <button
                     onClick={() => handleUpdateStatus(selectedIssue.id, Status.RESOLVED)}
                     className="py-4 bg-black text-white text-[10px] font-black uppercase tracking-widest hover:bg-gray-800 transition-all flex items-center justify-center gap-2 shadow-lg"
                   >
                     Mark Resolved
                   </button>
-                  <button 
+                  <button
                     onClick={() => handleUpdateStatus(selectedIssue.id, Status.SNOOZED)}
                     className="py-4 bg-white border border-gray-200 text-gray-700 text-[10px] font-black uppercase tracking-widest hover:bg-gray-50 transition-all"
                   >
@@ -516,15 +587,15 @@ export default function App() {
                   </button>
                 </div>
               ) : (
-                <button 
+                <button
                   onClick={() => handleUpdateStatus(selectedIssue.id, Status.OPEN)}
                   className="w-full py-4 bg-gray-200 text-black text-[10px] font-black uppercase tracking-widest hover:bg-gray-300 transition-all flex items-center justify-center gap-2"
                 >
                   <RotateCcw size={14} /> Reopen Issue
                 </button>
               )}
-              
-              <button 
+
+              <button
                 onClick={() => handleExport(selectedIssue.id)}
                 className="w-full py-3 bg-white border border-gray-200 text-gray-500 text-[10px] font-black uppercase tracking-widest hover:bg-gray-50 flex items-center justify-center gap-1 transition-all"
               >
@@ -537,7 +608,7 @@ export default function App() {
 
       {/* Dim Overlay */}
       {selectedIssueId && (
-        <div 
+        <div
           onClick={() => setSelectedIssueId(null)}
           className="fixed inset-0 bg-black/10 backdrop-blur-[1px] z-[90]"
         ></div>
