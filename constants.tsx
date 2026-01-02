@@ -93,79 +93,81 @@ export const MOCK_PROJECTS: Record<CloudProvider, Project[]> = {
   ]
 };
 
+// Expanded issues to match the counts displayed in the Project Cards
 export const MOCK_DETAILED_ISSUES: MisconfigDetail[] = [
-  // GCP Issues
+  // GCP - gcp-p1 (Finance Prod) - Needs 7 Critical, 15 High
   {
-    id: 'iss-g1',
-    projectId: 'gcp-p1',
-    assetType: AssetType.NETWORK,
+    id: 'iss-g1', projectId: 'gcp-p1', assetType: AssetType.NETWORK,
     title: 'Kubernetes API Server is Publicly Accessible',
-    description: 'The GKE control plane endpoint is open to 0.0.0.0/0. Recommended to use authorized networks or private endpoints.',
-    severity: Severity.CRITICAL,
-    status: Status.OPEN,
-    detectedTime: '4 mins ago'
+    description: 'The GKE control plane endpoint is open to 0.0.0.0/0. This exposes your cluster to scanning and brute force.',
+    severity: Severity.CRITICAL, status: Status.OPEN, detectedTime: '4 mins ago'
   },
   {
-    id: 'iss-g2',
-    projectId: 'gcp-p2',
-    assetType: AssetType.STORAGE,
+    id: 'iss-g1-2', projectId: 'gcp-p1', assetType: AssetType.COMPUTE,
+    title: 'Workload Identity is not enabled',
+    description: 'Pods are using default Node Service Accounts, which are overly permissive.',
+    severity: Severity.CRITICAL, status: Status.OPEN, detectedTime: '12 mins ago'
+  },
+  {
+    id: 'iss-g1-3', projectId: 'gcp-p1', assetType: AssetType.NETWORK,
+    title: 'Unrestricted Egress to Internal Metadata',
+    description: 'Kubernetes pods can reach the cloud metadata server, allowing potential privilege escalation.',
+    severity: Severity.CRITICAL, status: Status.OPEN, detectedTime: '15 mins ago'
+  },
+  {
+    id: 'iss-g1-4', projectId: 'gcp-p1', assetType: AssetType.IAM,
+    title: 'Key Rotation Policy Not Enforced',
+    description: 'KMS keys have not been rotated in over 365 days. Violates PCI-DSS.',
+    severity: Severity.CRITICAL, status: Status.OPEN, detectedTime: '22 mins ago'
+  },
+  {
+    id: 'iss-g1-5', projectId: 'gcp-p1', assetType: AssetType.STORAGE,
+    title: 'Unencrypted Disk Volumes (Production)',
+    description: 'Persistent volumes are not using Customer Managed Encryption Keys (CMEK).',
+    severity: Severity.CRITICAL, status: Status.OPEN, detectedTime: '30 mins ago'
+  },
+  {
+    id: 'iss-g1-6', projectId: 'gcp-p1', assetType: AssetType.NETWORK,
+    title: 'Default Network in Use',
+    description: 'The cluster is deployed in the "default" VPC. Recommendation: Use a custom VPC with restricted firewall rules.',
+    severity: Severity.CRITICAL, status: Status.OPEN, detectedTime: '45 mins ago'
+  },
+  {
+    id: 'iss-g1-7', projectId: 'gcp-p1', assetType: AssetType.IAM,
+    title: 'Overly Permissive GKE Cluster Admin',
+    description: 'High number of users (12) have the cluster-admin role. Reduces accountability.',
+    severity: Severity.CRITICAL, status: Status.OPEN, detectedTime: '1 hour ago'
+  },
+  // High severity placeholders for gcp-p1...
+  ...Array.from({ length: 15 }).map((_, i) => ({
+    id: `iss-g1-h-${i}`, projectId: 'gcp-p1', assetType: AssetType.COMPUTE,
+    title: `GKE Node Optimization Warning #${i + 1}`,
+    description: 'Node pool configurations do not meet recommended performance and security baselines.',
+    severity: Severity.HIGH, status: Status.OPEN, detectedTime: `${i + 2} hours ago`
+  })),
+
+  // GCP - gcp-p2 (BigQuery Staging)
+  {
+    id: 'iss-g2', projectId: 'gcp-p2', assetType: AssetType.STORAGE,
     title: 'Public Access to BigQuery Datasets',
-    description: 'The dataset "marketing_pii" has allAuthenticatedUsers permission, allowing anyone with a Google account to query data.',
-    severity: Severity.CRITICAL,
-    status: Status.OPEN,
-    detectedTime: '18 mins ago'
+    description: 'The dataset "marketing_pii" has allAuthenticatedUsers permission, allowing anyone to query data.',
+    severity: Severity.CRITICAL, status: Status.OPEN, detectedTime: '18 mins ago'
   },
+
+  // AWS - aws-p1 (E-Commerce Prod)
   {
-    id: 'iss-g3',
-    projectId: 'gcp-p1',
-    assetType: AssetType.IAM,
-    title: 'Default Service Account with Editor Role',
-    description: 'Compute Engine default service account is being used with the broad Editor role. Follow least-privilege principle.',
-    severity: Severity.HIGH,
-    status: Status.IN_PROGRESS,
-    detectedTime: '1 hour ago'
-  },
-  // AWS Issues
-  {
-    id: 'iss-a1',
-    projectId: 'aws-p1',
-    assetType: AssetType.STORAGE,
+    id: 'iss-a1', projectId: 'aws-p1', assetType: AssetType.STORAGE,
     title: 'Public Read Access on S3 Bucket "customer-attachments"',
     description: 'Bucket ACL allows "Everyone" read access. Sensitive files are potentially exposed via direct URL.',
-    severity: Severity.CRITICAL,
-    status: Status.OPEN,
-    detectedTime: '12 mins ago'
+    severity: Severity.CRITICAL, status: Status.OPEN, detectedTime: '12 mins ago'
   },
+
+  // Azure - az-p1 (Identity Prod)
   {
-    id: 'iss-a2',
-    projectId: 'aws-p1',
-    assetType: AssetType.NETWORK,
-    title: 'Security Group allows Inbound RDP (3389) from Internet',
-    description: 'The security group "sg-production-windows" allows port 3389 from 0.0.0.0/0, making it vulnerable to brute force attacks.',
-    severity: Severity.HIGH,
-    status: Status.OPEN,
-    detectedTime: '45 mins ago'
-  },
-  // Azure Issues
-  {
-    id: 'iss-z1',
-    projectId: 'az-p1',
-    assetType: AssetType.IAM,
+    id: 'iss-z1', projectId: 'az-p1', assetType: AssetType.IAM,
     title: 'Global Administrator without MFA Enabled',
     description: 'A user with the Global Administrator role has not registered for Multi-Factor Authentication (MFA).',
-    severity: Severity.CRITICAL,
-    status: Status.OPEN,
-    detectedTime: '2 mins ago'
-  },
-  {
-    id: 'iss-z2',
-    projectId: 'az-p2',
-    assetType: AssetType.LOGGING,
-    title: 'Diagnostic Logging Disabled for SQL Database',
-    description: 'Audit logging and diagnostic logs are not enabled for the SQL Managed Instance, violating compliance requirements.',
-    severity: Severity.MEDIUM,
-    status: Status.RESOLVED,
-    detectedTime: '3 hours ago'
+    severity: Severity.CRITICAL, status: Status.OPEN, detectedTime: '2 mins ago'
   }
 ];
 

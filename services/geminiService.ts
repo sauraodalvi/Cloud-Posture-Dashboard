@@ -13,7 +13,8 @@ export const getRemediation = async (title: string, description: string): Promis
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      // Use gemini-3-pro-preview for complex reasoning and coding tasks.
+      model: "gemini-3-pro-preview",
       contents: `Expert Cloud Security Remediation:
       Title: ${title}
       Description: ${description}
@@ -38,7 +39,9 @@ export const getRemediation = async (title: string, description: string): Promis
       }
     });
 
-    return JSON.parse(response.text || '{}');
+    // Directly access the .text property of GenerateContentResponse.
+    const jsonStr = response.text?.trim() || '{}';
+    return JSON.parse(jsonStr);
   } catch (error) {
     console.error("Gemini AI error", error);
     return {
