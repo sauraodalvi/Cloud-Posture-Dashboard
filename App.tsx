@@ -188,16 +188,16 @@ export default function App() {
 
   if (currentFrame === 'COVER') {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-8 grayscale">
-        <div className="max-w-4xl w-full bg-white border border-gray-200 shadow-2xl p-16 relative overflow-hidden">
+      <div className="min-h-screen bg-gray-50 flex flex-col items-center p-8 grayscale">
+        <div className="max-w-4xl w-full bg-white border border-gray-200 shadow-2xl p-10 relative my-auto">
           {/* Repositioned annotation to not overlap the main title */}
-          <header className="mb-12 border-b-4 border-black pb-6">
+          <header className="mb-8 border-b-4 border-black pb-6">
             <h1 className="text-5xl font-black uppercase tracking-tighter text-black">AccuKnox</h1>
             <p className="text-gray-400 font-bold uppercase tracking-widest text-xs mt-2">Cloud Posture Dashboard — by Saurao Dalvi</p>
           </header>
 
-          <div className="grid grid-cols-2 gap-12 mb-12">
-            <div className="space-y-12">
+          <div className="grid grid-cols-2 gap-8 mb-8">
+            <div className="space-y-8">
               <section>
                 <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-4">Problem Statement</h2>
                 <p className="text-gray-800 text-sm leading-relaxed">
@@ -207,19 +207,48 @@ export default function App() {
 
               <section>
                 <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-4">Success Metrics</h2>
-                <ul className="text-xs font-bold text-gray-700 space-y-2">
-                  <li className="flex items-center gap-2">• <span className="text-black">Critical risk identification in {"<"} 10s</span></li>
-                  <li className="flex items-center gap-2">• <span className="text-black">Zero-setup multi-cloud visibility</span></li>
-                  <li className="flex items-center gap-2">• <span className="text-black">Decisive manual remediation guidance</span></li>
-                </ul>
+                <div className="border border-gray-200 rounded-sm overflow-hidden">
+                  <table className="w-full text-[9px] text-left border-collapse">
+                    <thead className="bg-gray-50 border-b border-gray-200">
+                      <tr>
+                        <th className="p-2 font-black text-black border-r border-gray-200 w-1/4">Metric Name</th>
+                        <th className="p-2 font-black text-black border-r border-gray-200 w-1/3">Formula / How to Measure</th>
+                        <th className="p-2 font-black text-black">Why We Measure It</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200 bg-white">
+                      <tr>
+                        <td className="p-2 border-r border-gray-200 font-bold text-black align-top">Critical Issues Identified (%)</td>
+                        <td className="p-2 border-r border-gray-200 font-mono text-gray-500 align-top leading-tight">No. of critical issues identified ÷ Total critical issues present × 100</td>
+                        <td className="p-2 text-gray-700 align-top leading-relaxed">
+                          Measures if the dashboard <strong className="text-black">helps engineers find the most critical failures</strong>. The core purpose is visibility of high-risk misconfigs—if critical issues are missed, the dashboard fails its primary goal.
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="p-2 border-r border-gray-200 font-bold text-black align-top">Issues Correctly Understood (%)</td>
+                        <td className="p-2 border-r border-gray-200 font-mono text-gray-500 align-top leading-tight">No. of misconfigs correctly interpreted ÷ Total misconfigs viewed × 100</td>
+                        <td className="p-2 text-gray-700 align-top leading-relaxed">
+                          Ensures engineers <strong className="text-black">understand what each misconfiguration means</strong>. Visibility alone is insufficient; users must interpret the issue to take meaningful action.
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="p-2 border-r border-gray-200 font-bold text-black align-top">Issues Remediated Correctly (%)</td>
+                        <td className="p-2 border-r border-gray-200 font-mono text-gray-500 align-top leading-tight">No. of misconfigs user knows how to fix ÷ Total misconfigs viewed × 100</td>
+                        <td className="p-2 text-gray-700 align-top leading-relaxed">
+                          Measures whether engineers <strong className="text-black">can turn insight into action</strong>. The dashboard’s success hinges on not just finding problems, but enabling correct remediation.
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
               </section>
             </div>
 
-            <section className="bg-gray-50 p-6 rounded-sm border border-gray-200 h-80 overflow-y-auto custom-scrollbar shadow-inner text-xs">
-              <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-4 sticky top-0 bg-gray-50 pb-2 border-b border-gray-200 w-full z-10">
+            <section className="bg-gray-50 rounded-sm border border-gray-200 h-full overflow-y-auto custom-scrollbar shadow-inner text-xs relative max-h-[600px]">
+              <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 sticky top-0 bg-gray-50 px-6 py-4 border-b border-gray-200 w-full z-10">
                 User Guide & Glossary
               </h2>
-              <div className="space-y-6">
+              <div className="space-y-6 px-6 pb-6 pt-4">
 
                 {/* Terminology */}
                 <div>
@@ -323,8 +352,10 @@ export default function App() {
       <WalkthroughOverlay />
 
       {/* Sidebar */}
-      <aside className="w-16 bg-white border-r border-gray-200 flex flex-col items-center py-6 gap-8 shrink-0 z-50">
-        <Shield size={28} className="text-black" />
+      <aside className="w-16 bg-white border-r border-gray-200 flex flex-col items-center py-6 gap-8 shrink-0 z-50 overflow-y-auto no-scrollbar">
+        <button onClick={() => setCurrentFrame('COVER')} className="hover:scale-110 transition-transform cursor-pointer" title="Back to Cover">
+          <Shield size={28} className="text-black" />
+        </button>
         <nav className="flex flex-col gap-6">
           <button onClick={() => setCurrentFrame('OVERVIEW')} className={`p-2 rounded ${currentFrame === 'OVERVIEW' ? 'bg-gray-100 text-black' : 'text-gray-400 hover:text-black'}`} title="Overview"><Layout size={20} /></button>
           <button onClick={() => setCurrentFrame('LIST')} className={`p-2 rounded ${currentFrame === 'LIST' ? 'bg-gray-100 text-black' : 'text-gray-400 hover:text-black'}`} title="Inventory"><List size={20} /></button>
